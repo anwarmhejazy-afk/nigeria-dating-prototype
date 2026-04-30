@@ -151,6 +151,10 @@ export default function Home() {
                 NAIJA MATCH
               </p>
 
+<div className="text-[10px] text-red-400 font-bold">
+  DEMO VERSION
+</div>
+
               <h1 className="text-xl font-extrabold">
                 {screen === "discover" && "Discover"}
                 {screen === "match" && "Match"}
