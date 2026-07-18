@@ -1,3 +1,411 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_DIR="/e/nigeria-dating-prototype"
+
+if [[ ! -d "$PROJECT_DIR" ]]; then
+  echo "Project folder not found: $PROJECT_DIR"
+  echo "Update PROJECT_DIR at the top of this script if your folder moved."
+  exit 1
+fi
+
+cd "$PROJECT_DIR"
+
+STAMP="$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="backups/phase-1-premium-ui-$STAMP"
+mkdir -p "$BACKUP_DIR/app"
+
+for file in app/page.tsx app/layout.tsx app/globals.css app/data.ts; do
+  if [[ -f "$file" ]]; then
+    cp "$file" "$BACKUP_DIR/$file"
+  fi
+done
+
+echo "Backup created: $BACKUP_DIR"
+mkdir -p app
+
+cat > app/data.ts <<'NAIJA_MATCH_FILE_EOF'
+export type Profile = {
+  id: number;
+  name: string;
+  age: number;
+  location: string;
+  tribe: string;
+  distance: string;
+  verified: boolean;
+  online: boolean;
+  joined: string;
+  interests: string[];
+  bio: string;
+  image: string;
+  occupation: string;
+  education: string;
+  religion: string;
+  height: string;
+  languages: string[];
+  lifestyle: string;
+  lookingFor: string;
+  compatibility: number;
+};
+
+export const profiles: Profile[] = [
+  {
+    id: 1,
+    name: "Amaka",
+    age: 25,
+    location: "Lagos",
+    tribe: "Igbo",
+    distance: "3 km away",
+    verified: true,
+    online: true,
+    joined: "Joined recently",
+    interests: ["Business", "Travel", "Music"],
+    bio: "Confident, ambitious, and drawn to meaningful conversations and genuine connections.",
+    image: "/profiles/amaka.jpg",
+    occupation: "Brand Strategist",
+    education: "University of Lagos",
+    religion: "Christian",
+    height: "168 cm",
+    languages: ["English", "Igbo"],
+    lifestyle: "Social, active, non-smoker",
+    lookingFor: "A serious relationship",
+    compatibility: 94,
+  },
+  {
+    id: 2,
+    name: "Aisha",
+    age: 26,
+    location: "Abuja",
+    tribe: "Hausa",
+    distance: "7 km away",
+    verified: true,
+    online: true,
+    joined: "Active today",
+    interests: ["Family", "Lifestyle", "Food"],
+    bio: "Calm, focused, family-oriented, and interested in building something intentional.",
+    image: "/profiles/aisha.jpg",
+    occupation: "Pharmacist",
+    education: "University of Abuja",
+    religion: "Muslim",
+    height: "165 cm",
+    languages: ["English", "Hausa"],
+    lifestyle: "Modest, health-conscious",
+    lookingFor: "Marriage-minded connection",
+    compatibility: 91,
+  },
+  {
+    id: 3,
+    name: "Temi",
+    age: 24,
+    location: "Ibadan",
+    tribe: "Yoruba",
+    distance: "5 km away",
+    verified: true,
+    online: false,
+    joined: "Active 20m ago",
+    interests: ["Fashion", "Faith", "Movies"],
+    bio: "Fun, respectful, creative, and always ready for good conversation and positive energy.",
+    image: "/profiles/temi.jpg",
+    occupation: "Fashion Designer",
+    education: "University of Ibadan",
+    religion: "Christian",
+    height: "170 cm",
+    languages: ["English", "Yoruba"],
+    lifestyle: "Creative, outgoing",
+    lookingFor: "Dating with intention",
+    compatibility: 89,
+  },
+  {
+    id: 4,
+    name: "Kemi",
+    age: 28,
+    location: "Lekki",
+    tribe: "Yoruba",
+    distance: "2 km away",
+    verified: true,
+    online: true,
+    joined: "Joined this week",
+    interests: ["Luxury", "Travel", "Fitness"],
+    bio: "Elegant lifestyle, ambitious mindset, and a soft spot for travel and new experiences.",
+    image: "/profiles/kemi.jpg",
+    occupation: "Real Estate Consultant",
+    education: "Babcock University",
+    religion: "Christian",
+    height: "172 cm",
+    languages: ["English", "Yoruba"],
+    lifestyle: "Fitness-focused, social",
+    lookingFor: "A confident life partner",
+    compatibility: 96,
+  },
+  {
+    id: 5,
+    name: "Ada",
+    age: 27,
+    location: "Port Harcourt",
+    tribe: "Igbo",
+    distance: "9 km away",
+    verified: true,
+    online: false,
+    joined: "Active 1h ago",
+    interests: ["Business", "Networking", "Books"],
+    bio: "Driven, thoughtful, and focused on creating a beautiful life with the right person.",
+    image: "/profiles/ada.jpg",
+    occupation: "Financial Analyst",
+    education: "University of Port Harcourt",
+    religion: "Christian",
+    height: "166 cm",
+    languages: ["English", "Igbo"],
+    lifestyle: "Career-focused, calm",
+    lookingFor: "Long-term relationship",
+    compatibility: 88,
+  },
+  {
+    id: 6,
+    name: "Ifeoma",
+    age: 29,
+    location: "Enugu",
+    tribe: "Igbo",
+    distance: "6 km away",
+    verified: true,
+    online: true,
+    joined: "Active now",
+    interests: ["Culture", "Wellness", "Reading"],
+    bio: "Mature, respectful, intentional, and happiest around honest people with warm hearts.",
+    image: "/profiles/ifeoma.jpg",
+    occupation: "Medical Doctor",
+    education: "University of Nigeria",
+    religion: "Christian",
+    height: "169 cm",
+    languages: ["English", "Igbo"],
+    lifestyle: "Balanced, wellness-minded",
+    lookingFor: "A committed relationship",
+    compatibility: 93,
+  },
+  {
+    id: 7,
+    name: "Zainab",
+    age: 24,
+    location: "Kano",
+    tribe: "Hausa",
+    distance: "4 km away",
+    verified: true,
+    online: false,
+    joined: "Active today",
+    interests: ["Family", "Culture", "Cooking"],
+    bio: "Kind-hearted, grounded, and values respect, family, laughter, and genuine companionship.",
+    image: "/profiles/zainab.jpg",
+    occupation: "Architect",
+    education: "Bayero University Kano",
+    religion: "Muslim",
+    height: "164 cm",
+    languages: ["English", "Hausa"],
+    lifestyle: "Modest, family-oriented",
+    lookingFor: "A respectful partner",
+    compatibility: 87,
+  },
+  {
+    id: 8,
+    name: "Chidinma",
+    age: 26,
+    location: "Owerri",
+    tribe: "Igbo",
+    distance: "8 km away",
+    verified: true,
+    online: true,
+    joined: "Joined recently",
+    interests: ["Travel", "Dance", "Lifestyle"],
+    bio: "Positive energy, adventurous spirit, and always ready to enjoy the best parts of life.",
+    image: "/profiles/chidinma.jpg",
+    occupation: "Content Creator",
+    education: "Imo State University",
+    religion: "Christian",
+    height: "167 cm",
+    languages: ["English", "Igbo"],
+    lifestyle: "Active, adventurous",
+    lookingFor: "Chemistry and commitment",
+    compatibility: 90,
+  },
+];
+
+export const notifications = [
+  { id: 1, title: "New profile view", text: "Someone nearby viewed your profile.", time: "2m" },
+  { id: 2, title: "You have a new like", text: "Upgrade to see who liked you.", time: "18m" },
+  { id: 3, title: "Top Pick refreshed", text: "Your daily Top Picks are ready.", time: "1h" },
+];
+NAIJA_MATCH_FILE_EOF
+
+cat > app/layout.tsx <<'NAIJA_MATCH_FILE_EOF'
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "NAIJA MATCH | Premium Nigerian Dating",
+  description:
+    "A premium Nigerian dating app prototype designed for meaningful connections.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full">{children}</body>
+    </html>
+  );
+}
+NAIJA_MATCH_FILE_EOF
+
+cat > app/globals.css <<'NAIJA_MATCH_FILE_EOF'
+@import "tailwindcss";
+
+:root {
+  --background: #07080b;
+  --foreground: #f7f7f5;
+  --gold: #f2c94c;
+  --gold-soft: #ffe58c;
+  --panel: #111318;
+  --panel-2: #171a21;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(242, 201, 76, 0.16), transparent 34%),
+    radial-gradient(circle at 10% 80%, rgba(26, 106, 255, 0.08), transparent 32%),
+    #07080b;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-scroll {
+  scrollbar-width: none;
+}
+
+.app-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-panel {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.gold-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-shine::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-130%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.36), transparent);
+  animation: shine 3.8s ease-in-out infinite;
+}
+
+.card-grab {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.card-grab:active {
+  cursor: grabbing;
+}
+
+.match-pop {
+  animation: matchPop 520ms cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+}
+
+.floating-heart {
+  position: absolute;
+  bottom: 16%;
+  animation: floatHeart 2.8s ease-in infinite;
+  opacity: 0;
+}
+
+.typing-dot {
+  animation: typing 1.15s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+.pulse-ring {
+  animation: pulseRing 2.2s ease-out infinite;
+}
+
+@keyframes shine {
+  0%, 55% { transform: translateX(-130%) skewX(-18deg); }
+  80%, 100% { transform: translateX(130%) skewX(-18deg); }
+}
+
+@keyframes matchPop {
+  from { opacity: 0; transform: scale(0.72) rotate(-5deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes floatHeart {
+  0% { opacity: 0; transform: translateY(20px) scale(0.6) rotate(-12deg); }
+  18% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(-380px) scale(1.25) rotate(18deg); }
+}
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(0.92); opacity: 0.55; }
+  75%, 100% { transform: scale(1.25); opacity: 0; }
+}
+
+@media (max-width: 560px) {
+  body {
+    background: #090a0e;
+  }
+}
+NAIJA_MATCH_FILE_EOF
+
+cat > app/page.tsx <<'NAIJA_MATCH_FILE_EOF'
 "use client";
 
 import Image from "next/image";
@@ -520,3 +928,22 @@ function SettingsOverlay({ close, settings, setSettings, showToast }: { close: (
   const toggles: { key: keyof typeof settings; title: string; text: string }[] = [{ key: "notifications", title: "Notifications", text: "Matches, messages and profile activity" }, { key: "darkMode", title: "Dark mode", text: "Use the premium dark appearance" }, { key: "distance", title: "Show my distance", text: "Allow matches to see approximate distance" }];
   return <OverlayShell><header className="flex items-center gap-3 border-b border-white/[0.07] px-5 py-5"><button onClick={close} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.055]"><Icon name="back" /></button><div><p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">ACCOUNT</p><h1 className="text-2xl font-black">Settings</h1></div></header><div className="app-scroll flex-1 overflow-y-auto p-5"><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Preferences</p><div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.035]">{toggles.map((item, index) => <div key={item.key} className={`flex items-center gap-3 p-4 ${index ? "border-t border-white/[0.06]" : ""}`}><div className="min-w-0 flex-1"><p className="text-sm font-black">{item.title}</p><p className="mt-1 text-[10px] text-white/35">{item.text}</p></div><button onClick={() => setSettings({ ...settings, [item.key]: !settings[item.key] })} className={`relative h-7 w-12 rounded-full transition ${settings[item.key] ? "bg-[#F2C94C]" : "bg-white/15"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${settings[item.key] ? "left-6" : "left-1"}`} /></button></div>)}</div><p className="mb-3 mt-7 text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Safety & privacy</p><div className="space-y-2">{["Privacy controls", "Blocked users", "Safety centre", "Help and support"].map((title) => <button key={title} onClick={() => showToast(`${title} will be connected in the production phase`)} className="flex w-full items-center justify-between rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4 text-sm font-bold"><span>{title}</span><Icon name="chevron" className="h-4 w-4 text-white/25" /></button>)}</div><button onClick={() => showToast("Account deletion requires secure authentication")} className="mt-7 w-full rounded-2xl border border-red-400/15 bg-red-400/[0.06] py-4 text-sm font-black text-red-300">Delete account</button></div></OverlayShell>;
 }
+NAIJA_MATCH_FILE_EOF
+
+echo
+echo "Running production build..."
+npm run build
+
+echo
+echo "Upgrade complete. Current Git status:"
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git status --short
+else
+  echo "Git repository not detected in this test copy."
+fi
+
+echo
+echo "Preview: http://localhost:3000"
+if [[ "${SKIP_DEV:-0}" != "1" ]]; then
+  npm run dev
+fi
