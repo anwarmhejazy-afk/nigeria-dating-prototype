@@ -47,7 +47,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           password,
           options: {
             data: { full_name: fullName.trim() },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=/app`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
           },
         });
         if (signUpError) throw signUpError;

@@ -143,3 +143,31 @@ button {
     background: #090a0e;
   }
 }
+
+
+.profile-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.9rem 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.profile-input::placeholder {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+.profile-input:focus {
+  border-color: rgba(242, 201, 76, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 4px rgba(242, 201, 76, 0.08);
+}
+
+.profile-input option {
+  background: #171a21;
+  color: #f7f7f5;
+}
