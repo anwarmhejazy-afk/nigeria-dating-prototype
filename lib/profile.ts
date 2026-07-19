@@ -33,6 +33,10 @@ export type MemberProfile = {
   onboarding_completed: boolean;
   is_verified: boolean;
   is_online: boolean;
+  account_status: string;
+  moderation_note: string | null;
+  messaging_restricted_until: string | null;
+  suspended_until: string | null;
 };
 
 const defaultLifestyle: LifestylePreferences = {
@@ -100,6 +104,10 @@ export function toMemberProfile(row: Record<string, unknown>): MemberProfile {
     onboarding_completed: Boolean(row.onboarding_completed),
     is_verified: Boolean(row.is_verified),
     is_online: Boolean(row.is_online),
+    account_status: stringValue(row.account_status, "active"),
+    moderation_note: nullableString(row.moderation_note),
+    messaging_restricted_until: nullableString(row.messaging_restricted_until),
+    suspended_until: nullableString(row.suspended_until),
   };
 }
 

@@ -171,3 +171,19 @@ button {
   background: #171a21;
   color: #f7f7f5;
 }
+
+.admin-action {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.65rem 0.85rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+  transition: 160ms ease;
+}
+.admin-action:hover { background: rgba(255,255,255,.08); }
+.admin-action:disabled { opacity: .4; cursor: not-allowed; }
+.admin-danger { border-color: rgba(248,113,113,.22); color: rgb(254 202 202); background: rgba(248,113,113,.06); }
+.mini-action { border-radius: .65rem; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.035); padding: .45rem .6rem; font-size: .64rem; font-weight: 900; color: rgba(255,255,255,.58); }
+.mini-action:hover { background: rgba(255,255,255,.075); color: white; }

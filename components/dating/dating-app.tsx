@@ -39,6 +39,15 @@ type SwipeHistory = {
 
 type ApiError = { error?: string };
 
+type SafetyReportDraft = {
+  category: string;
+  details: string;
+  evidenceScope: "profile" | "selected" | "last_20" | "full_conversation";
+  selectedMessageIds: string[];
+  blockMember: boolean;
+  unmatch: boolean;
+};
+
 const navItems: { id: MainTab; label: string; icon: DatingIconName }[] = [
   { id: "home", label: "Home", icon: "home" },
   { id: "discover", label: "Discover", icon: "discover" },
@@ -48,12 +57,19 @@ const navItems: { id: MainTab; label: string; icon: DatingIconName }[] = [
 ];
 
 const reportOptions = [
-  { value: "fake_profile", label: "Fake or misleading profile" },
-  { value: "harassment", label: "Harassment or abusive behaviour" },
-  { value: "spam", label: "Spam or commercial activity" },
+  { value: "harassment", label: "Harassment or rude language" },
+  { value: "racism_hate_speech", label: "Racism or hate speech" },
+  { value: "threats", label: "Threats or intimidation" },
+  { value: "sexual_harassment", label: "Sexual harassment" },
+  { value: "scam_fraud", label: "Scam or fraud" },
+  { value: "asking_for_money", label: "Asking for money" },
+  { value: "business_solicitation", label: "Unwanted business transaction" },
+  { value: "spam", label: "Spam or advertising" },
+  { value: "fake_profile", label: "Fake or misleading identity" },
+  { value: "illegal_content", label: "Illegal content" },
   { value: "inappropriate_content", label: "Inappropriate content" },
   { value: "underage", label: "May be under 18" },
-  { value: "other", label: "Something else" },
+  { value: "other", label: "Other safety concern" },
 ];
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
@@ -653,8 +669,8 @@ export function DatingApp({
 
   const submitReport = async (
     profile: DiscoveryProfile,
-    category: string,
-    details: string,
+    matchId: string | undefined,
+    draft: SafetyReportDraft,
   ) => {
     if (profile.source === "showcase") {
       setOverlay(null);
@@ -662,12 +678,41 @@ export function DatingApp({
       return;
     }
 
-    await apiRequest("/api/safety/report", {
+    const result = await apiRequest<{ relationshipClosed?: boolean }>("/api/safety/report", {
       method: "POST",
-      body: JSON.stringify({ memberId: profile.id, category, details }),
+      body: JSON.stringify({
+        memberId: profile.id,
+        matchId: matchId || null,
+        ...draft,
+      }),
     });
+
+    if (result.relationshipClosed) {
+      setMatches((previous) => previous.filter((match) => match.profile.id !== profile.id));
+      setCandidates((previous) => previous.filter((item) => item.id !== profile.id));
+      setIncomingLikes((previous) => previous.filter((item) => item.id !== profile.id));
+      if (activeMatch?.profile.id === profile.id) {
+        setActiveMatch(null);
+        setMessages([]);
+      }
+    }
+
     setOverlay(null);
-    showToast("Report submitted for review");
+    showToast("Safety report submitted confidentially");
+  };
+
+  const requestVerification = async () => {
+    const note = window.prompt("Optional note for the verification team:") || "";
+    try {
+      await apiRequest("/api/verification/request", {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      });
+      setOverlay(null);
+      showToast("Verification request submitted");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Unable to request verification.");
+    }
   };
 
   return (
@@ -822,6 +867,7 @@ export function DatingApp({
             setSettings={setSettings}
             close={() => setOverlay(null)}
             editProfile={() => router.push("/profile/edit")}
+            requestVerification={() => void requestVerification()}
             showToast={showToast}
           />
         )}
@@ -829,11 +875,12 @@ export function DatingApp({
         {overlay?.type === "safety" && (
           <SafetyOverlay
             profile={overlay.profile}
+            matchId={overlay.matchId}
+            messages={overlay.matchId && activeMatch?.id === overlay.matchId ? messages : []}
+            memberId={memberProfile.id}
             close={() => setOverlay(null)}
             block={() => void blockProfile(overlay.profile)}
-            report={(category, details) =>
-              submitReport(overlay.profile, category, details)
-            }
+            report={(draft) => submitReport(overlay.profile, overlay.matchId, draft)}
           />
         )}
 
@@ -1757,13 +1804,13 @@ function NotificationItem({ icon, title, text }: { icon: DatingIconName; title: 
   return <div className="flex gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name={icon} className="h-5 w-5" /></span><div><p className="text-sm font-black">{title}</p><p className="mt-1 text-[11px] leading-4 text-white/38">{text}</p></div></div>;
 }
 
-function SettingsOverlay({ settings, setSettings, close, editProfile, showToast }: { settings: { notifications: boolean; showOnline: boolean; discoveryVisible: boolean }; setSettings: React.Dispatch<React.SetStateAction<{ notifications: boolean; showOnline: boolean; discoveryVisible: boolean }>>; close: () => void; editProfile: () => void; showToast: (text: string) => void }) {
+function SettingsOverlay({ settings, setSettings, close, editProfile, requestVerification, showToast }: { settings: { notifications: boolean; showOnline: boolean; discoveryVisible: boolean }; setSettings: React.Dispatch<React.SetStateAction<{ notifications: boolean; showOnline: boolean; discoveryVisible: boolean }>>; close: () => void; editProfile: () => void; requestVerification: () => void; showToast: (text: string) => void }) {
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
         <AppHeader title="Settings" subtitle="Privacy, safety and account controls" />
         <div className="mt-6 space-y-2"><SettingToggle label="Push notifications" description="Matches, messages and important activity" value={settings.notifications} onChange={() => setSettings((value) => ({ ...value, notifications: !value.notifications }))} /><SettingToggle label="Show online status" description="Let matches see when you are active" value={settings.showOnline} onChange={() => setSettings((value) => ({ ...value, showOnline: !value.showOnline }))} /><SettingToggle label="Discovery visibility" description="Allow your profile to appear in discovery" value={settings.discoveryVisible} onChange={() => setSettings((value) => ({ ...value, discoveryVisible: !value.discoveryVisible }))} /></div>
-        <div className="mt-6 space-y-2"><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="shield" label="Safety centre" onClick={() => showToast("Safety centre content is being prepared")} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management is coming next")} /></div>
+        <div className="mt-6 space-y-2"><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="check" label="Request profile verification" onClick={requestVerification} /><SettingsButton icon="shield" label="Safety centre" onClick={() => showToast("Use the three-dot menu in a profile or chat to report, block or unmatch.")} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management will be expanded in the next member settings release.")} /></div>
         <form action="/auth/signout" method="post" className="mt-6"><button className="w-full rounded-2xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-black text-red-300">Sign out</button></form>
       </div>
     </OverlayShell>
@@ -1778,29 +1825,44 @@ function SettingsButton({ icon, label, onClick }: { icon: DatingIconName; label:
   return <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 text-left"><DatingIcon name={icon} className="h-5 w-5 text-white/35" /><span className="flex-1 text-sm font-bold text-white/65">{label}</span><DatingIcon name="chevron" className="h-4 w-4 text-white/20" /></button>;
 }
 
-function SafetyOverlay({ profile, close, block, report }: { profile: DiscoveryProfile; close: () => void; block: () => void; report: (category: string, details: string) => Promise<void> }) {
-  const [category, setCategory] = useState("fake_profile");
+function SafetyOverlay({ profile, matchId, messages, memberId, close, block, report }: { profile: DiscoveryProfile; matchId?: string; messages: MatchMessage[]; memberId: string; close: () => void; block: () => void; report: (draft: SafetyReportDraft) => Promise<void> }) {
+  const [category, setCategory] = useState("harassment");
   const [details, setDetails] = useState("");
+  const [evidenceScope, setEvidenceScope] = useState<SafetyReportDraft["evidenceScope"]>(matchId ? "last_20" : "profile");
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [blockMember, setBlockMember] = useState(false);
+  const [unmatch, setUnmatch] = useState(Boolean(matchId));
   const [submitting, setSubmitting] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
   const submit = async () => {
+    if (evidenceScope === "selected" && selectedMessageIds.length === 0) return;
     setSubmitting(true);
     try {
-      await report(category, details);
+      await report({ category, details, evidenceScope, selectedMessageIds, blockMember, unmatch });
     } finally {
       setSubmitting(false);
     }
   };
+
+  const toggleMessage = (id: string) => setSelectedMessageIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
 
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
         <div className="text-center"><SmallAvatar profile={profile} size="mx-auto h-20 w-20" /><h1 className="mt-4 text-2xl font-black">Safety options</h1><p className="mt-1 text-sm text-white/38">Manage your experience with {profile.displayName}.</p></div>
         {!showReport ? (
-          <div className="mt-8 space-y-3"><button onClick={() => setShowReport(true)} className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-400/10 text-orange-300"><DatingIcon name="flag" /></span><span><span className="block text-sm font-black">Report profile</span><span className="mt-1 block text-[10px] text-white/35">Send confidential details to moderation.</span></span></button><button onClick={block} className="flex w-full items-center gap-3 rounded-2xl border border-red-400/15 bg-red-400/[0.045] p-4 text-left"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-400/10 text-red-300"><DatingIcon name="ban" /></span><span><span className="block text-sm font-black text-red-200">Block member</span><span className="mt-1 block text-[10px] text-red-100/35">Remove each other from discovery and matches.</span></span></button><div className="rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/50"><strong className="text-blue-100/75">Stay safe:</strong> Never send money, banking details, verification codes or identity documents to another member.</div></div>
+          <div className="mt-8 space-y-3"><button onClick={() => setShowReport(true)} className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-400/10 text-orange-300"><DatingIcon name="flag" /></span><span><span className="block text-sm font-black">{matchId ? "Report conversation" : "Report profile"}</span><span className="mt-1 block text-[10px] text-white/35">{matchId ? "Choose exactly which chat evidence the safety team may review." : "Send confidential profile details to moderation."}</span></span></button><button onClick={block} className="flex w-full items-center gap-3 rounded-2xl border border-red-400/15 bg-red-400/[0.045] p-4 text-left"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-400/10 text-red-300"><DatingIcon name="ban" /></span><span><span className="block text-sm font-black text-red-200">Block member</span><span className="mt-1 block text-[10px] text-red-100/35">Remove each other from discovery and matches.</span></span></button><div className="rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/50"><strong className="text-blue-100/75">Privacy promise:</strong> Moderators cannot casually browse private chats. They only receive the specific evidence you submit with a report.</div></div>
         ) : (
-          <div className="mt-8"><label className="text-xs font-bold text-white/55">Why are you reporting this profile?</label><select value={category} onChange={(event) => setCategory(event.target.value)} className="profile-input mt-2">{reportOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><label className="mt-5 block text-xs font-bold text-white/55">Additional details <span className="font-normal text-white/25">(optional)</span></label><textarea value={details} onChange={(event) => setDetails(event.target.value)} maxLength={1000} rows={5} placeholder="Tell the moderation team what happened..." className="profile-input mt-2 resize-none" /><button disabled={submitting} onClick={() => void submit()} className="mt-5 w-full rounded-2xl bg-orange-400 py-3 text-sm font-black text-black disabled:opacity-40">{submitting ? "Submitting..." : "Submit confidential report"}</button><button onClick={() => setShowReport(false)} className="mt-2 w-full py-2 text-xs font-bold text-white/35">Back</button></div>
+          <div className="mt-8">
+            <label className="text-xs font-bold text-white/55">What happened?</label>
+            <select value={category} onChange={(event) => setCategory(event.target.value)} className="profile-input mt-2">{reportOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+            {matchId && <><label className="mt-5 block text-xs font-bold text-white/55">Conversation evidence shared with the safety team</label><div className="mt-2 grid gap-2"><button onClick={() => setEvidenceScope("selected")} className={`rounded-2xl border p-3 text-left text-xs font-bold ${evidenceScope === "selected" ? "border-[#F2C94C]/60 bg-[#F2C94C]/10" : "border-white/10 bg-white/[0.03]"}`}>Selected messages only</button><button onClick={() => setEvidenceScope("last_20")} className={`rounded-2xl border p-3 text-left text-xs font-bold ${evidenceScope === "last_20" ? "border-[#F2C94C]/60 bg-[#F2C94C]/10" : "border-white/10 bg-white/[0.03]"}`}>Last 20 messages</button><button onClick={() => setEvidenceScope("full_conversation")} className={`rounded-2xl border p-3 text-left text-xs font-bold ${evidenceScope === "full_conversation" ? "border-[#F2C94C]/60 bg-[#F2C94C]/10" : "border-white/10 bg-white/[0.03]"}`}>Full available conversation <span className="text-white/30">(up to 300 recent messages)</span></button></div></>}
+            {matchId && evidenceScope === "selected" && <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-3">{messages.map((item) => { const checked = selectedMessageIds.includes(item.id); return <button key={item.id} onClick={() => toggleMessage(item.id)} className={`flex w-full gap-3 rounded-xl border p-3 text-left ${checked ? "border-[#F2C94C]/60 bg-[#F2C94C]/10" : "border-white/[0.06] bg-white/[0.025]"}`}><span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${checked ? "border-[#F2C94C] bg-[#F2C94C] text-black" : "border-white/20"}`}>{checked ? "✓" : ""}</span><span><span className="block text-[9px] font-black text-white/35">{item.senderId === memberId ? "You" : profile.displayName}</span><span className="mt-1 block text-xs leading-5 text-white/70">{item.body}</span></span></button>; })}{!messages.length && <p className="py-5 text-center text-xs text-white/30">No loaded messages are available to select. Choose “Last 20 messages” instead.</p>}</div>}
+            <label className="mt-5 block text-xs font-bold text-white/55">Explain the concern</label><textarea value={details} onChange={(event) => setDetails(event.target.value)} maxLength={2000} rows={5} placeholder="Describe the rude, racist, threatening, sexual, fraudulent or unwanted business behaviour..." className="profile-input mt-2 resize-none" />
+            {matchId && <div className="mt-4 space-y-2"><label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs font-bold"><input type="checkbox" checked={unmatch} onChange={(event) => setUnmatch(event.target.checked)} className="h-4 w-4 accent-[#F2C94C]" />Unmatch and close this conversation after reporting</label><label className="flex items-center gap-3 rounded-2xl border border-red-400/15 bg-red-400/[0.04] p-3 text-xs font-bold text-red-100/70"><input type="checkbox" checked={blockMember} onChange={(event) => { setBlockMember(event.target.checked); if (event.target.checked) setUnmatch(true); }} className="h-4 w-4 accent-red-400" />Block this member immediately</label></div>}
+            <button disabled={submitting || (evidenceScope === "selected" && selectedMessageIds.length === 0)} onClick={() => void submit()} className="mt-5 w-full rounded-2xl bg-orange-400 py-3 text-sm font-black text-black disabled:opacity-40">{submitting ? "Submitting securely..." : "Submit confidential safety report"}</button><button onClick={() => setShowReport(false)} className="mt-2 w-full py-2 text-xs font-bold text-white/35">Back</button>
+          </div>
         )}
       </div>
     </OverlayShell>

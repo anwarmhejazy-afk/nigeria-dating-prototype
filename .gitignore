@@ -50,3 +50,5 @@ upgrade-naija-match-phase-*.sh
 .env*
 upgrade-afrolove-*.sh
 polish-and-deploy-afrolove*.sh
+upgrade-afrolove-phase-*.sh
+*.before-email-repair
