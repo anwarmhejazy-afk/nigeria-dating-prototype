@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import {
   calculateAge,
   calculateProfileCompletion,
@@ -16,12 +17,17 @@ import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Basics", "About you", "Compatibility", "Review"] as const;
 
-const nigerianStates = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
-  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
-  "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi",
-  "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo",
-  "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara", "FCT Abuja",
+const africanCountries = [
+  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi",
+  "Cabo Verde", "Cameroon", "Central African Republic", "Chad", "Comoros",
+  "Democratic Republic of the Congo", "Djibouti", "Egypt", "Equatorial Guinea",
+  "Eritrea", "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea",
+  "Guinea-Bissau", "Ivory Coast", "Kenya", "Lesotho", "Liberia", "Libya",
+  "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco",
+  "Mozambique", "Namibia", "Niger", "Nigeria", "Republic of the Congo",
+  "Rwanda", "São Tomé and Príncipe", "Senegal", "Seychelles", "Sierra Leone",
+  "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo",
+  "Tunisia", "Uganda", "Zambia", "Zimbabwe",
 ];
 
 const interestOptions = [
@@ -51,6 +57,7 @@ type FormState = {
   date_of_birth: string;
   gender: string;
   show_me: string;
+  country: string;
   city: string;
   state: string;
   tribe: string;
@@ -72,6 +79,7 @@ function initialForm(profile: MemberProfile | null): FormState {
     date_of_birth: profile?.date_of_birth ?? "",
     gender: profile?.gender ?? "",
     show_me: profile?.show_me ?? "",
+    country: profile?.onboarding_completed ? profile.country : "",
     city: profile?.city ?? "",
     state: profile?.state ?? "",
     tribe: profile?.tribe ?? "",
@@ -170,7 +178,8 @@ export function ProfileEditor({
       if (!form.date_of_birth || age === null || age < 18) return "You must be at least 18 years old.";
       if (!form.gender) return "Choose your gender.";
       if (!form.show_me) return "Choose who you would like to meet.";
-      if (!form.state || !form.city.trim()) return "Add your Nigerian state and city.";
+      if (!form.country) return "Choose your country.";
+      if (!form.state.trim() || !form.city.trim()) return "Add your region and city.";
     }
 
     if (currentStep === 1) {
@@ -293,8 +302,8 @@ export function ProfileEditor({
         gender: form.gender || null,
         show_me: form.show_me || null,
         city: form.city.trim() || null,
-        state: form.state || null,
-        country: "Nigeria",
+        state: form.state.trim() || null,
+        country: form.country,
         tribe: form.tribe.trim() || null,
         occupation: form.occupation.trim() || null,
         education: form.education.trim() || null,
@@ -352,9 +361,9 @@ export function ProfileEditor({
                 </Link>
               )}
               <div>
-                <p className="text-[10px] font-black tracking-[0.32em] text-[#F2C94C]">NAIJA MATCH</p>
+                <BrandLogo href="/" size="sm" />
                 <h1 className="mt-1 text-2xl font-black sm:text-3xl">
-                  {mode === "onboarding" ? "Build your dating profile" : "Edit your profile"}
+                  {mode === "onboarding" ? "Build your AfroLove profile" : "Edit your profile"}
                 </h1>
               </div>
             </div>
@@ -415,8 +424,9 @@ export function ProfileEditor({
                   <Field label="Date of birth" hint={age !== null ? `${age} years old` : "You must be 18+"} required><input type="date" max={maxBirthDate} value={form.date_of_birth} onChange={(event) => update("date_of_birth", event.target.value)} className="profile-input" /></Field>
                   <Field label="I am" required><select value={form.gender} onChange={(event) => update("gender", event.target.value)} className="profile-input"><option value="">Select gender</option><option>Man</option><option>Woman</option><option>Non-binary</option></select></Field>
                   <Field label="Show me" required><select value={form.show_me} onChange={(event) => update("show_me", event.target.value)} className="profile-input"><option value="">Who would you like to meet?</option><option>Men</option><option>Women</option><option>Everyone</option></select></Field>
-                  <Field label="State" required><select value={form.state} onChange={(event) => update("state", event.target.value)} className="profile-input"><option value="">Select state</option>{nigerianStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
-                  <Field label="City" required><input value={form.city} onChange={(event) => update("city", event.target.value)} placeholder="Lagos, Abuja, Port Harcourt..." className="profile-input" /></Field>
+                  <Field label="Country" required><select value={form.country} onChange={(event) => update("country", event.target.value)} className="profile-input"><option value="">Select country</option>{africanCountries.map((country) => <option key={country}>{country}</option>)}</select></Field>
+                  <Field label="State / province / region" required><input value={form.state} onChange={(event) => update("state", event.target.value)} placeholder="Lagos State, Gauteng, Nairobi County..." className="profile-input" /></Field>
+                  <Field label="City" required><input value={form.city} onChange={(event) => update("city", event.target.value)} placeholder="Lagos, Accra, Nairobi, Johannesburg..." className="profile-input" /></Field>
                 </div>
               </div>
             )}
@@ -431,8 +441,8 @@ export function ProfileEditor({
                     <Field label="Education"><input value={form.education} onChange={(event) => update("education", event.target.value)} placeholder="University or qualification" className="profile-input" /></Field>
                     <Field label="Religion"><select value={form.religion} onChange={(event) => update("religion", event.target.value)} className="profile-input"><option value="">Select</option><option>Christian</option><option>Muslim</option><option>Traditional</option><option>Spiritual</option><option>Other</option><option>Prefer not to say</option></select></Field>
                     <Field label="Height (cm)" required><input type="number" min="120" max="230" value={form.height_cm} onChange={(event) => update("height_cm", event.target.value)} placeholder="175" className="profile-input" /></Field>
-                    <Field label="Tribe / heritage"><input value={form.tribe} onChange={(event) => update("tribe", event.target.value)} placeholder="Igbo, Yoruba, Hausa..." className="profile-input" /></Field>
-                    <Field label="Languages" hint="Separate with commas" required><input value={form.languagesText} onChange={(event) => update("languagesText", event.target.value)} placeholder="English, Yoruba" className="profile-input" /></Field>
+                    <Field label="Ethnic group / heritage"><input value={form.tribe} onChange={(event) => update("tribe", event.target.value)} placeholder="Igbo, Akan, Kikuyu, Zulu..." className="profile-input" /></Field>
+                    <Field label="Languages" hint="Separate with commas" required><input value={form.languagesText} onChange={(event) => update("languagesText", event.target.value)} placeholder="English, French, Swahili..." className="profile-input" /></Field>
                   </div>
                 </div>
               </div>
@@ -440,7 +450,7 @@ export function ProfileEditor({
 
             {step === 2 && (
               <div>
-                <SectionTitle number="03" title="Compatibility that matters" text="Set your intentions and help NAIJA MATCH find stronger connections." />
+                <SectionTitle number="03" title="Compatibility that matters" text="Set your intentions and help AfroLove find stronger connections." />
                 <div className="mt-6 space-y-5">
                   <Field label="Relationship goal" required><select value={form.relationship_goal} onChange={(event) => update("relationship_goal", event.target.value)} className="profile-input"><option value="">Choose your goal</option>{relationshipOptions.map((option) => <option key={option}>{option}</option>)}</select></Field>
                   <Field label="What I am looking for" hint={`${form.looking_for.length}/400`} required><textarea rows={4} maxLength={400} value={form.looking_for} onChange={(event) => update("looking_for", event.target.value)} placeholder="Describe the values, energy and relationship you hope to build..." className="profile-input resize-none" /></Field>
@@ -467,7 +477,7 @@ export function ProfileEditor({
                     <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[26px] bg-[#F2C94C] text-2xl font-black text-black">
                       {photos[0] ? <Image src={photos[0]} alt={form.display_name} fill sizes="96px" className="object-cover" /> : initialsFromName(form.display_name)}
                     </div>
-                    <div className="min-w-0"><h2 className="truncate text-2xl font-black">{form.display_name || "Your name"}{age !== null ? `, ${age}` : ""}</h2><p className="mt-1 text-xs font-bold text-[#F2C94C]">{form.occupation || "Your occupation"} · {form.city || "Your city"}</p><p className="mt-2 text-xs text-white/40">{form.relationship_goal || "Your relationship goal"}</p></div>
+                    <div className="min-w-0"><h2 className="truncate text-2xl font-black">{form.display_name || "Your name"}{age !== null ? `, ${age}` : ""}</h2><p className="mt-1 text-xs font-bold text-[#F2C94C]">{form.occupation || "Your occupation"} · {[form.city, form.country].filter(Boolean).join(", ") || "Your location"}</p><p className="mt-2 text-xs text-white/40">{form.relationship_goal || "Your relationship goal"}</p></div>
                   </div>
                   <p className="mt-5 text-sm leading-6 text-white/60">{form.bio || "Your story will appear here."}</p>
                   <div className="mt-4 flex flex-wrap gap-2">{form.interests.map((interest) => <span key={interest} className="rounded-full bg-white/[0.06] px-3 py-1.5 text-[10px] font-bold text-white/60">{interest}</span>)}</div>

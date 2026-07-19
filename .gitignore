@@ -48,3 +48,5 @@ upgrade-naija-match-phase-*.sh
 
 .vercel
 .env*
+upgrade-afrolove-*.sh
+polish-and-deploy-afrolove*.sh

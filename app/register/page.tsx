@@ -10,5 +10,5 @@ export default async function RegisterPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/app");
 
-  return <AuthShell eyebrow="Join the community" title="Create your account" description="Start with secure email registration. Your full dating profile comes next."><AuthForm mode="register" /></AuthShell>;
+  return <AuthShell eyebrow="Join the AfroLove community" title="Create your account" description="Create your secure account, then build a profile that reflects your culture, values and relationship goals."><AuthForm mode="register" /></AuthShell>;
 }

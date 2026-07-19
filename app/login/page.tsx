@@ -10,5 +10,5 @@ export default async function LoginPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/app");
 
-  return <AuthShell eyebrow="Welcome back" title="Sign in to continue" description="Access your matches, messages and premium Nigerian dating experience."><AuthForm mode="login" /></AuthShell>;
+  return <AuthShell eyebrow="Welcome back" title="Sign in to continue" description="Access your matches, messages and premium pan-African dating experience."><AuthForm mode="login" /></AuthShell>;
 }

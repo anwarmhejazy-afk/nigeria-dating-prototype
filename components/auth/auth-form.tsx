@@ -161,7 +161,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       <p className="mt-6 text-center text-xs text-white/40">
         {mode === "login" ? (
-          <>New to NAIJA MATCH? <Link href="/register" className="font-black text-[#F2C94C]">Create an account</Link></>
+          <>New to AfroLove? <Link href="/register" className="font-black text-[#F2C94C]">Create an account</Link></>
         ) : mode === "register" ? (
           <>Already registered? <Link href="/login" className="font-black text-[#F2C94C]">Sign in</Link></>
         ) : (

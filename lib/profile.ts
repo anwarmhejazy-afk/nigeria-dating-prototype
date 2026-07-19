@@ -66,7 +66,7 @@ export function toMemberProfile(row: Record<string, unknown>): MemberProfile {
   return {
     id: stringValue(row.id),
     email: nullableString(row.email),
-    display_name: stringValue(row.display_name, "NAIJA MATCH Member"),
+    display_name: stringValue(row.display_name, "AfroLove Member"),
     avatar_url: nullableString(row.avatar_url),
     photo_urls: stringArray(row.photo_urls),
     bio: nullableString(row.bio),
@@ -75,7 +75,7 @@ export function toMemberProfile(row: Record<string, unknown>): MemberProfile {
     show_me: nullableString(row.show_me),
     city: nullableString(row.city),
     state: nullableString(row.state),
-    country: stringValue(row.country, "Nigeria"),
+    country: stringValue(row.country, "Africa"),
     tribe: nullableString(row.tribe),
     occupation: nullableString(row.occupation),
     education: nullableString(row.education),
@@ -124,7 +124,7 @@ export function calculateAge(dateOfBirth: string | null) {
 
 export function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "NM";
+  if (!parts.length) return "AL";
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
@@ -146,6 +146,7 @@ export function calculateProfileCompletion(profile: {
   show_me: string;
   city: string;
   state: string;
+  country: string;
   photo_urls: string[];
   bio: string;
   occupation: string;
@@ -166,6 +167,7 @@ export function calculateProfileCompletion(profile: {
     Boolean(profile.show_me),
     Boolean(profile.city),
     Boolean(profile.state),
+    Boolean(profile.country),
     profile.photo_urls.length >= 1,
     profile.bio.trim().length >= 30,
     Boolean(profile.occupation),

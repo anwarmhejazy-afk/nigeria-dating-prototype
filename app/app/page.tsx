@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { DatingApp } from "@/components/dating/dating-app";
+import { loadMatchingInitialData } from "@/lib/matching";
 import { toMemberProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,5 +26,17 @@ export default async function MemberAppPage() {
     redirect("/onboarding");
   }
 
-  return <DatingApp memberProfile={toMemberProfile(profile)} />;
+  const memberProfile = toMemberProfile(profile);
+  const initialData = await loadMatchingInitialData(
+    supabase,
+    user.id,
+    memberProfile,
+  );
+
+  return (
+    <DatingApp
+      memberProfile={memberProfile}
+      initialData={initialData}
+    />
+  );
 }
