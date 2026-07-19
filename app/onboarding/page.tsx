@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/profile-editor";
+import { isAdmin } from "@/lib/admin";
 import { toMemberProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,6 +14,10 @@ export default async function OnboardingPage() {
 
   if (!user) {
     redirect("/login?next=/onboarding");
+  }
+
+  if (await isAdmin(supabase)) {
+    redirect("/admin");
   }
 
   const { data: profile } = await supabase

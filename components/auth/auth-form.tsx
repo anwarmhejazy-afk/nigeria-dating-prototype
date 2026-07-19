@@ -31,8 +31,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
         });
         if (signInError) throw signInError;
 
-        const next = new URLSearchParams(window.location.search).get("next");
-        router.replace(next?.startsWith("/") ? next : "/app");
+        const { data: adminAccess, error: adminError } =
+          await supabase.rpc("is_afrolove_admin");
+
+        if (adminError) throw adminError;
+
+        if (adminAccess) {
+          router.replace("/admin");
+        } else {
+          const next = new URLSearchParams(window.location.search).get("next");
+          router.replace(next?.startsWith("/") ? next : "/app");
+        }
+
         router.refresh();
         return;
       }
@@ -56,21 +66,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
           router.replace("/app");
           router.refresh();
         } else {
-          setMessage("Account created. Check your email and confirm your address to continue.");
+          setMessage(
+            "Account created. Check your email and confirm your address to continue.",
+          );
         }
         return;
       }
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email.trim(),
-        {
+      const { error: resetError } =
+        await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-        },
-      );
+        });
+
       if (resetError) throw resetError;
       setMessage("Password reset email sent. Check your inbox for the secure link.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Something went wrong. Please try again.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Something went wrong. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -81,7 +96,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <form onSubmit={submit} className="space-y-4">
         {mode === "register" && (
           <label className="block">
-            <span className="mb-2 block text-xs font-bold text-white/60">Full name</span>
+            <span className="mb-2 block text-xs font-bold text-white/60">
+              Full name
+            </span>
             <input
               required
               value={fullName}
@@ -94,7 +111,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
         )}
 
         <label className="block">
-          <span className="mb-2 block text-xs font-bold text-white/60">Email address</span>
+          <span className="mb-2 block text-xs font-bold text-white/60">
+            Email address
+          </span>
           <input
             required
             type="email"
@@ -111,7 +130,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <span className="mb-2 flex items-center justify-between text-xs font-bold text-white/60">
               Password
               {mode === "login" && (
-                <Link href="/forgot-password" className="text-[#F2C94C] hover:text-[#FFE58C]">
+                <Link
+                  href="/forgot-password"
+                  className="text-[#F2C94C] hover:text-[#FFE58C]"
+                >
                   Forgot password?
                 </Link>
               )}
@@ -122,15 +144,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              autoComplete={
+                mode === "register" ? "new-password" : "current-password"
+              }
               placeholder="Minimum 8 characters"
               className="w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3.5 text-sm outline-none transition placeholder:text-white/25 focus:border-[#F2C94C]/70 focus:ring-4 focus:ring-[#F2C94C]/10"
             />
           </label>
         )}
 
-        {error && <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.08] p-3 text-xs leading-5 text-red-200">{error}</div>}
-        {message && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.08] p-3 text-xs leading-5 text-emerald-200">{message}</div>}
+        {error && (
+          <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.08] p-3 text-xs leading-5 text-red-200">
+            {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.08] p-3 text-xs leading-5 text-emerald-200">
+            {message}
+          </div>
+        )}
 
         <button
           disabled={loading}
@@ -153,7 +186,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
             Coming next
             <span className="h-px flex-1 bg-white/10" />
           </div>
-          <button disabled className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.035] py-3.5 text-sm font-bold text-white/35">
+          <button
+            disabled
+            className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.035] py-3.5 text-sm font-bold text-white/35"
+          >
             Continue with Google — provider setup required
           </button>
         </div>
@@ -161,11 +197,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       <p className="mt-6 text-center text-xs text-white/40">
         {mode === "login" ? (
-          <>New to AfroLove? <Link href="/register" className="font-black text-[#F2C94C]">Create an account</Link></>
+          <>
+            New to AfroLove?{" "}
+            <Link href="/register" className="font-black text-[#F2C94C]">
+              Create an account
+            </Link>
+          </>
         ) : mode === "register" ? (
-          <>Already registered? <Link href="/login" className="font-black text-[#F2C94C]">Sign in</Link></>
+          <>
+            Already registered?{" "}
+            <Link href="/login" className="font-black text-[#F2C94C]">
+              Sign in
+            </Link>
+          </>
         ) : (
-          <Link href="/login" className="font-black text-[#F2C94C]">Return to sign in</Link>
+          <Link href="/login" className="font-black text-[#F2C94C]">
+            Return to sign in
+          </Link>
         )}
       </p>
     </>
