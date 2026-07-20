@@ -39,6 +39,16 @@ type SwipeHistory = {
 
 type ApiError = { error?: string };
 
+type ActivityNotification = {
+  id: string;
+  type: "like" | "match" | "message" | "safety" | "verification" | "system";
+  title: string;
+  body: string;
+  url: string;
+  read_at: string | null;
+  created_at: string;
+};
+
 type SafetyReportDraft = {
   category: string;
   details: string;
@@ -237,11 +247,13 @@ export function DatingApp({
     showOnline: true,
     discoveryVisible: true,
   });
+  const [activityNotifications, setActivityNotifications] = useState<ActivityNotification[]>([]);
 
   const current = candidates[0] || null;
   const next = candidates[1] || null;
   const third = candidates[2] || null;
   const unreadCount = matches.reduce((total, match) => total + match.unreadCount, 0);
+  const activityUnreadCount = activityNotifications.filter((item) => !item.read_at).length;
   const selfProfile = useMemo(() => memberToDiscovery(memberProfile), [memberProfile]);
 
   const filteredCandidates = useMemo(() => {
@@ -267,6 +279,49 @@ export function DatingApp({
     setToast(text);
     window.setTimeout(() => setToast(""), 2600);
   };
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (["home", "discover", "likes", "chat", "profile"].includes(requestedTab || "")) {
+      setTab(requestedTab as MainTab);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/notifications")
+      .then((response) => response.json())
+      .then((payload) => {
+        if (active && Array.isArray(payload.notifications)) {
+          setActivityNotifications(payload.notifications);
+        }
+      })
+      .catch(() => undefined);
+
+    const supabase = supabaseRef.current;
+    const channel = supabase
+      .channel(`notifications-${memberProfile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${memberProfile.id}`,
+        },
+        (payload) => {
+          const notification = payload.new as ActivityNotification;
+          setActivityNotifications((current) => [notification, ...current].slice(0, 50));
+          showToast(notification.title);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [memberProfile.id]);
 
   useEffect(() => {
     void fetch("/api/presence", {
@@ -735,7 +790,7 @@ export function DatingApp({
               openMatch={openMatch}
               openNotifications={() => setOverlay({ type: "notifications" })}
               openPremium={() => setOverlay({ type: "premium" })}
-              unreadCount={unreadCount}
+              unreadCount={unreadCount + activityUnreadCount}
             />
           )}
 
@@ -857,7 +912,20 @@ export function DatingApp({
           <NotificationsOverlay
             likes={incomingLikes.length}
             matches={matches}
+            notifications={activityNotifications}
             close={() => setOverlay(null)}
+            openNotification={(url) => {
+              void fetch("/api/notifications", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({}),
+              });
+              setActivityNotifications((items) =>
+                items.map((item) => ({ ...item, read_at: item.read_at || new Date().toISOString() })),
+              );
+              setOverlay(null);
+              router.push(url);
+            }}
           />
         )}
 
@@ -868,6 +936,7 @@ export function DatingApp({
             close={() => setOverlay(null)}
             editProfile={() => router.push("/profile/edit")}
             requestVerification={() => void requestVerification()}
+            openNotificationSettings={() => router.push("/settings/notifications")}
             showToast={showToast}
           />
         )}
@@ -1784,16 +1853,25 @@ function PriceCard({ period, price, featured = false }: { period: string; price:
   return <div className={`rounded-2xl border p-3 ${featured ? "border-[#F2C94C] bg-[#F2C94C]/10" : "border-white/10 bg-white/[0.025]"}`}><p className="text-[9px] font-bold text-white/35">{period}</p><p className="mt-2 text-sm font-black text-[#FFE58C]">{price}</p>{featured && <p className="mt-1 text-[7px] font-black text-[#F2C94C]">BEST VALUE</p>}</div>;
 }
 
-function NotificationsOverlay({ likes, matches, close }: { likes: number; matches: MatchSummary[]; close: () => void }) {
+function NotificationsOverlay({ likes, matches, notifications, close, openNotification }: { likes: number; matches: MatchSummary[]; notifications: ActivityNotification[]; close: () => void; openNotification: (url: string) => void }) {
   const recentMatches = matches.slice(0, 4);
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
         <AppHeader title="Activity" subtitle="Likes, matches and messages" />
         <div className="mt-6 space-y-3">
+          {notifications.map((notification) => (
+            <button key={notification.id} onClick={() => openNotification(notification.url)} className="w-full text-left">
+              <NotificationItem
+                icon={notification.type === "message" ? "chat" : notification.type === "like" ? "heart" : notification.type === "safety" ? "shield" : "sparkles"}
+                title={notification.title}
+                text={`${notification.body} · ${relativeTime(notification.created_at)}`}
+              />
+            </button>
+          ))}
           {likes > 0 && <NotificationItem icon="heart" title={`${likes} ${likes === 1 ? "person likes" : "people like"} you`} text="Upgrade to reveal incoming profiles." />}
           {recentMatches.map((match) => <NotificationItem key={match.id} icon="sparkles" title={`You matched with ${match.profile.displayName}`} text={match.lastMessage} />)}
-          {!likes && !recentMatches.length && <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center"><DatingIcon name="bell" className="mx-auto h-7 w-7 text-white/20" /><p className="mt-4 text-sm font-bold">No new activity</p><p className="mt-1 text-xs text-white/30">We will notify you when something meaningful happens.</p></div>}
+          {!notifications.length && !likes && !recentMatches.length && <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center"><DatingIcon name="bell" className="mx-auto h-7 w-7 text-white/20" /><p className="mt-4 text-sm font-bold">No new activity</p><p className="mt-1 text-xs text-white/30">We will notify you when something meaningful happens.</p></div>}
         </div>
       </div>
     </OverlayShell>
@@ -1804,13 +1882,13 @@ function NotificationItem({ icon, title, text }: { icon: DatingIconName; title: 
   return <div className="flex gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name={icon} className="h-5 w-5" /></span><div><p className="text-sm font-black">{title}</p><p className="mt-1 text-[11px] leading-4 text-white/38">{text}</p></div></div>;
 }
 
-function SettingsOverlay({ settings, setSettings, close, editProfile, requestVerification, showToast }: { settings: { notifications: boolean; showOnline: boolean; discoveryVisible: boolean }; setSettings: React.Dispatch<React.SetStateAction<{ notifications: boolean; showOnline: boolean; discoveryVisible: boolean }>>; close: () => void; editProfile: () => void; requestVerification: () => void; showToast: (text: string) => void }) {
+function SettingsOverlay({ settings, setSettings, close, editProfile, requestVerification, openNotificationSettings, showToast }: { settings: { notifications: boolean; showOnline: boolean; discoveryVisible: boolean }; setSettings: React.Dispatch<React.SetStateAction<{ notifications: boolean; showOnline: boolean; discoveryVisible: boolean }>>; close: () => void; editProfile: () => void; requestVerification: () => void; openNotificationSettings: () => void; showToast: (text: string) => void }) {
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
         <AppHeader title="Settings" subtitle="Privacy, safety and account controls" />
-        <div className="mt-6 space-y-2"><SettingToggle label="Push notifications" description="Matches, messages and important activity" value={settings.notifications} onChange={() => setSettings((value) => ({ ...value, notifications: !value.notifications }))} /><SettingToggle label="Show online status" description="Let matches see when you are active" value={settings.showOnline} onChange={() => setSettings((value) => ({ ...value, showOnline: !value.showOnline }))} /><SettingToggle label="Discovery visibility" description="Allow your profile to appear in discovery" value={settings.discoveryVisible} onChange={() => setSettings((value) => ({ ...value, discoveryVisible: !value.discoveryVisible }))} /></div>
-        <div className="mt-6 space-y-2"><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="check" label="Request profile verification" onClick={requestVerification} /><SettingsButton icon="shield" label="Safety centre" onClick={() => showToast("Use the three-dot menu in a profile or chat to report, block or unmatch.")} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management will be expanded in the next member settings release.")} /></div>
+        <div className="mt-6 space-y-2"><SettingsButton icon="bell" label="Notification settings" onClick={openNotificationSettings} /><SettingToggle label="Show online status" description="Let matches see when you are active" value={settings.showOnline} onChange={() => setSettings((value) => ({ ...value, showOnline: !value.showOnline }))} /><SettingToggle label="Discovery visibility" description="Allow your profile to appear in discovery" value={settings.discoveryVisible} onChange={() => setSettings((value) => ({ ...value, discoveryVisible: !value.discoveryVisible }))} /></div>
+        <div className="mt-6 space-y-2"><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="check" label="Request profile verification" onClick={requestVerification} /><SettingsButton icon="shield" label="Safety centre" onClick={() => { window.location.href = "/safety"; }} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management will be expanded in the next member settings release.")} /></div>
         <form action="/auth/signout" method="post" className="mt-6"><button className="w-full rounded-2xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-black text-red-300">Sign out</button></form>
       </div>
     </OverlayShell>

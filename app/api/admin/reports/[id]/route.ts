@@ -1,4 +1,5 @@
 import { isAdmin } from "@/lib/admin";
+import { sendPushToUser } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -15,6 +16,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const note = typeof payload.note === "string" ? payload.note.trim() : "";
   const durationHours = typeof payload.durationHours === "number" && Number.isFinite(payload.durationHours) ? Math.round(payload.durationHours) : null;
 
+  const { data: report } = await supabase
+    .from("reports")
+    .select("reporter_id")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.rpc("admin_resolve_report", {
     p_report_id: id,
     p_status: status,
@@ -23,5 +30,19 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     p_duration_hours: durationHours,
   });
   if (error) return Response.json({ error: error.message || "Unable to update report." }, { status: 400 });
+
+  if (report?.reporter_id && ["resolved", "dismissed"].includes(status)) {
+    await sendPushToUser(supabase, report.reporter_id, {
+      type: "safety",
+      title: "Your safety report was reviewed",
+      body: status === "resolved"
+        ? "AfroLove’s safety team completed its review and took appropriate action."
+        : "AfroLove’s safety team completed its review. No further action was taken based on the submitted evidence.",
+      url: "/app",
+      tag: `safety-result-${id}`,
+      metadata: { reportId: id, status },
+    });
+  }
+
   return Response.json({ success: true });
 }

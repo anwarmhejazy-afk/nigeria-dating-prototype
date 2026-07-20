@@ -53,3 +53,6 @@ polish-and-deploy-afrolove*.sh
 upgrade-afrolove-phase-*.sh
 *.before-email-repair
 promote-afrolove-*.sh
+*.before-*
+.afrolove-vercel-env-*
+deploy-afrolove-*.sh

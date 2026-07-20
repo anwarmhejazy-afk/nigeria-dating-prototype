@@ -1,19 +1,10 @@
+import { sendPushToAdmins } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 
 const categories = new Set([
-  "harassment",
-  "racism_hate_speech",
-  "threats",
-  "sexual_harassment",
-  "scam_fraud",
-  "asking_for_money",
-  "business_solicitation",
-  "spam",
-  "fake_profile",
-  "illegal_content",
-  "inappropriate_content",
-  "underage",
-  "other",
+  "harassment", "racism_hate_speech", "threats", "sexual_harassment",
+  "scam_fraud", "asking_for_money", "business_solicitation", "spam",
+  "fake_profile", "illegal_content", "inappropriate_content", "underage", "other",
 ]);
 
 const evidenceScopes = new Set(["profile", "selected", "last_20", "full_conversation"]);
@@ -24,14 +15,8 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
 
   let payload: {
-    memberId?: unknown;
-    matchId?: unknown;
-    category?: unknown;
-    details?: unknown;
-    evidenceScope?: unknown;
-    selectedMessageIds?: unknown;
-    blockMember?: unknown;
-    unmatch?: unknown;
+    memberId?: unknown; matchId?: unknown; category?: unknown; details?: unknown;
+    evidenceScope?: unknown; selectedMessageIds?: unknown; blockMember?: unknown; unmatch?: unknown;
   };
   try { payload = await request.json(); } catch { return Response.json({ error: "Invalid request body." }, { status: 400 }); }
 
@@ -66,5 +51,15 @@ export async function POST(request: Request) {
   });
 
   if (error) return Response.json({ error: error.message || "Unable to submit this report." }, { status: 400 });
+
+  await sendPushToAdmins(supabase, {
+    type: "safety",
+    title: "New AfroLove safety report",
+    body: "A member submitted evidence for moderator review.",
+    url: "/admin",
+    tag: `safety-report-${data}`,
+    metadata: { reportId: data, reporterId: user.id, reportedId: memberId },
+  });
+
   return Response.json({ success: true, reportId: data, relationshipClosed: Boolean(payload.blockMember || payload.unmatch) });
 }

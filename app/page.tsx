@@ -121,6 +121,13 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
+        <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t border-white/[0.07] px-5 py-5 text-[11px] font-bold text-white/35 sm:px-8">
+          <Link href="/install" className="hover:text-[#F2C94C]">Install AfroLove</Link>
+          <Link href="/safety" className="hover:text-[#F2C94C]">Safety Centre</Link>
+          <Link href="/community-guidelines" className="hover:text-[#F2C94C]">Community Guidelines</Link>
+          <Link href="/privacy" className="hover:text-[#F2C94C]">Privacy</Link>
+          <Link href="/terms" className="hover:text-[#F2C94C]">Terms</Link>
+        </footer>
       </div>
     </main>
   );

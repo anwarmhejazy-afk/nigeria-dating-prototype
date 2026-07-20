@@ -1,4 +1,5 @@
 import { toMatchMessage } from "@/lib/matching";
+import { sendPushToUser } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
@@ -65,6 +66,16 @@ export async function POST(
     );
   }
 
+  const { data: match } = await supabase
+    .from("matches")
+    .select("user_low,user_high,is_active")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!match?.is_active || ![match.user_low, match.user_high].includes(user.id)) {
+    return Response.json({ error: "This match is unavailable." }, { status: 403 });
+  }
+
   const { data, error } = await supabase
     .from("messages")
     .insert({
@@ -82,6 +93,22 @@ export async function POST(
       { status: 400 },
     );
   }
+
+  const recipientId = match.user_low === user.id ? match.user_high : match.user_low;
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  await sendPushToUser(supabase, recipientId, {
+    type: "message",
+    title: senderProfile?.display_name || "New AfroLove message",
+    body: body.length > 120 ? `${body.slice(0, 117)}...` : body,
+    url: "/app?tab=chat",
+    tag: `message-${id}`,
+    metadata: { matchId: id, messageId: data.id, senderId: user.id },
+  });
 
   return Response.json({ message: toMatchMessage(data) });
 }

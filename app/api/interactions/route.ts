@@ -1,4 +1,5 @@
 import { getMatchSummary, type InteractionAction } from "@/lib/matching";
+import { sendPushToUser } from "@/lib/push";
 import { toMemberProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -49,15 +50,30 @@ export async function POST(request: Request) {
   const matched = Boolean(result?.matched);
   const matchId = typeof result?.match_id === "string" ? result.match_id : null;
 
-  if (!matched || !matchId) {
-    return Response.json({ matched: false, match: null });
-  }
-
   const { data: profileData } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
+
+  const actorName = profileData?.display_name || "Someone";
+
+  if (action === "like" || action === "super_like") {
+    await sendPushToUser(supabase, targetId, {
+      type: matched ? "match" : "like",
+      title: matched ? "It’s a match!" : action === "super_like" ? "You received a Super Like" : "Someone likes you",
+      body: matched
+        ? `You and ${actorName} chose each other. Start a genuine conversation.`
+        : `${actorName} showed interest in your AfroLove profile.`,
+      url: matched ? "/app?tab=chat" : "/app?tab=likes",
+      tag: matched ? `match-${matchId}` : `like-${user.id}`,
+      metadata: { actorId: user.id, matchId, action },
+    });
+  }
+
+  if (!matched || !matchId) {
+    return Response.json({ matched: false, match: null });
+  }
 
   if (!profileData) {
     return Response.json({ matched: true, match: null });

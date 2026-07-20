@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { PwaProvider } from "@/components/pwa/pwa-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,6 +13,13 @@ export const metadata: Metadata = {
   description:
     "AfroLove is a premium pan-African dating experience for meaningful connections across Africa and the diaspora.",
   applicationName: "AfroLove",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "AfroLove",
+  },
+  formatDetection: { telephone: false },
   keywords: [
     "African dating",
     "pan-African dating app",
@@ -21,23 +29,32 @@ export const metadata: Metadata = {
     "AfroLove",
   ],
   icons: {
-    icon: "/brand/afrolove-app-icon.png",
-    apple: "/brand/afrolove-app-icon.png",
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
   },
   openGraph: {
     title: "AfroLove | One Africa. Real Connections.",
     description:
       "A premium pan-African dating experience built for genuine chemistry, culture and commitment.",
     type: "website",
-    images: ["/brand/afrolove-logo-dark.png"],
+    images: ["/opengraph-image.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "AfroLove | One Africa. Real Connections.",
     description:
       "A premium pan-African dating experience for meaningful connections.",
-    images: ["/brand/afrolove-logo-dark.png"],
+    images: ["/twitter-image.png"],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#07080b",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -47,7 +64,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <PwaProvider>{children}</PwaProvider>
+      </body>
     </html>
   );
 }
