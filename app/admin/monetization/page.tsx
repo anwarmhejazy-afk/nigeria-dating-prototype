@@ -1,4 +1,5 @@
 import { MonetizationDashboard } from "@/components/admin/monetization-dashboard";
+import { getAdminDisplayName } from "@/lib/admin-identity";
 import { flutterwaveConfigured } from "@/lib/flutterwave";
 import { createClient } from "@/lib/supabase/server";
 
@@ -6,7 +7,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminMonetizationPage() {
   const supabase = await createClient();
-  const [settings, members, subscriptions, transactions] = await Promise.all([
+  const [{ data: authData }, settings, members, subscriptions, transactions] =
+    await Promise.all([
+      supabase.auth.getUser(),
     supabase.from("monetization_settings").select("*").eq("singleton", true).single(),
     supabase.from("profiles").select("id,display_name,email").eq("onboarding_completed", true).order("display_name").limit(300),
     supabase.from("member_subscriptions").select("id,user_id,plan_slug,status,current_period_end,is_test").order("created_at", { ascending: false }).limit(500),
@@ -27,5 +30,14 @@ export default async function AdminMonetizationPage() {
     partner_split_ratio: 1,
   };
 
-  return <MonetizationDashboard initialSettings={(settings.data || fallback) as typeof fallback} members={members.data || []} subscriptions={subscriptions.data || []} transactions={transactions.data || []} flutterwaveConfigured={flutterwaveConfigured()} />;
+  return (
+    <MonetizationDashboard
+      initialSettings={(settings.data || fallback) as typeof fallback}
+      members={members.data || []}
+      subscriptions={subscriptions.data || []}
+      transactions={transactions.data || []}
+      flutterwaveConfigured={flutterwaveConfigured()}
+      currentAdminName={getAdminDisplayName(authData.user?.email)}
+    />
+  );
 }

@@ -105,7 +105,13 @@ function Metric({ label, value, hint }: { label: string; value: number; hint: st
   );
 }
 
-export function AdminDashboard({ initialData }: { initialData: AdminDashboardData }) {
+export function AdminDashboard({
+  initialData,
+  currentAdminName,
+}: {
+  initialData: AdminDashboardData;
+  currentAdminName: string;
+}) {
   const [data, setData] = useState(initialData);
   const [tab, setTab] = useState<Tab>("overview");
   const [query, setQuery] = useState("");
@@ -159,6 +165,17 @@ export function AdminDashboard({ initialData }: { initialData: AdminDashboardDat
           <div className="min-w-0 flex-1">
             <p className="text-sm font-black">Safety & Administration</p>
             <p className="text-[11px] text-white/35">Selective evidence review. Every action is audited.</p>
+          </div>
+          <div
+            data-testid="current-admin-name"
+            className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-right"
+          >
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">
+              Signed in as
+            </p>
+            <p className="mt-0.5 text-xs font-black text-[#FFE58C]">
+              {currentAdminName}
+            </p>
           </div>
           <a href="/admin/monetization" className="rounded-full border border-[#F2C94C]/25 px-4 py-2 text-xs font-black text-[#FFE58C] hover:bg-[#F2C94C]/10">
             Monetisation

@@ -28,12 +28,14 @@ export function MonetizationDashboard({
   subscriptions,
   transactions,
   flutterwaveConfigured,
+  currentAdminName,
 }: {
   initialSettings: Settings;
   members: Member[];
   subscriptions: Subscription[];
   transactions: Transaction[];
   flutterwaveConfigured: boolean;
+  currentAdminName: string;
 }) {
   const [settings, setSettings] = useState(initialSettings);
   const [memberId, setMemberId] = useState(members[0]?.id || "");
@@ -90,6 +92,17 @@ export function MonetizationDashboard({
           <BrandLogo size="sm" />
           <div className="h-8 w-px bg-white/10" />
           <div className="min-w-0 flex-1"><p className="text-sm font-black">Monetisation & Memberships</p><p className="text-[11px] text-white/35">Flutterwave test mode, 50/50 split and access controls</p></div>
+          <div
+            data-testid="current-monetisation-admin-name"
+            className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-right"
+          >
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">
+              Signed in as
+            </p>
+            <p className="mt-0.5 text-xs font-black text-[#FFE58C]">
+              {currentAdminName}
+            </p>
+          </div>
           <a href="/admin" className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55">Safety admin</a>
           <a href="/premium" className="rounded-full bg-[#F2C94C] px-4 py-2 text-xs font-black text-black">Member pricing</a>
         </div>
@@ -139,6 +152,16 @@ export function MonetizationDashboard({
             <button disabled={busy || !memberId} onClick={() => void grant()} className="mt-5 w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black disabled:opacity-50">Grant test access</button>
             <div className="mt-5 rounded-2xl border border-white/[0.07] bg-black/20 p-4 text-xs leading-5 text-white/35"><strong className="text-white/65">Current default:</strong> Premium ₦3,500/month, VIP ₦7,500/month, owner/friend split ratio 1:1.</div>
           </section>
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <a
+            href="/admin"
+            data-testid="back-to-admin-dashboard"
+            className="inline-flex w-full max-w-md items-center justify-center rounded-2xl border border-[#F2C94C]/30 bg-[#F2C94C]/[0.07] px-5 py-3.5 text-sm font-black text-[#FFE58C] transition hover:border-[#F2C94C]/55 hover:bg-[#F2C94C]/[0.12]"
+          >
+            ← Back to admin dashboard
+          </a>
         </div>
       </section>
     </main>
