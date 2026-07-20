@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DatingApp } from "@/components/dating/dating-app";
 import { loadMatchingInitialData } from "@/lib/matching";
+import { getMembershipSnapshot } from "@/lib/membership";
 import { toMemberProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,16 +28,20 @@ export default async function MemberAppPage() {
   }
 
   const memberProfile = toMemberProfile(profile);
-  const initialData = await loadMatchingInitialData(
-    supabase,
-    user.id,
-    memberProfile,
-  );
+  const [initialData, membership] = await Promise.all([
+    loadMatchingInitialData(supabase, user.id, memberProfile),
+    getMembershipSnapshot(supabase),
+  ]);
+
+  const protectedInitialData = membership.features.see_likes
+    ? initialData
+    : { ...initialData, incomingLikes: [] };
 
   return (
     <DatingApp
       memberProfile={memberProfile}
-      initialData={initialData}
+      initialData={protectedInitialData}
+      membership={membership}
     />
   );
 }

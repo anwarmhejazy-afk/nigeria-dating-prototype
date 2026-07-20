@@ -160,6 +160,9 @@ export function AdminDashboard({ initialData }: { initialData: AdminDashboardDat
             <p className="text-sm font-black">Safety & Administration</p>
             <p className="text-[11px] text-white/35">Selective evidence review. Every action is audited.</p>
           </div>
+          <a href="/admin/monetization" className="rounded-full border border-[#F2C94C]/25 px-4 py-2 text-xs font-black text-[#FFE58C] hover:bg-[#F2C94C]/10">
+            Monetisation
+          </a>
           <a href="/app" className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55 hover:bg-white/5">
             Member app
           </a>
@@ -186,6 +189,12 @@ export function AdminDashboard({ initialData }: { initialData: AdminDashboardDat
               {label}
             </button>
           ))}
+          <a
+            href="/admin/monetization"
+            className="mb-1 mt-2 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-left text-sm font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12"
+          >
+            Monetisation & memberships
+          </a>
           <div className="mt-4 rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/55">
             Admins cannot browse unrelated private conversations. Only evidence intentionally submitted in a safety report is shown here.
           </div>

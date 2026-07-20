@@ -62,6 +62,7 @@ export type MatchingInitialData = {
   candidates: DiscoveryProfile[];
   matches: MatchSummary[];
   incomingLikes: DiscoveryProfile[];
+  incomingLikeCount: number;
   showcaseMode: boolean;
 };
 
@@ -476,6 +477,7 @@ export async function loadMatchingInitialData(
     candidates: showcaseMode ? showcaseProfiles() : liveCandidates,
     matches,
     incomingLikes,
+    incomingLikeCount: incomingLikes.length,
     showcaseMode,
   };
 }

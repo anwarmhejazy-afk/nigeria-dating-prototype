@@ -72,3 +72,24 @@ VAPID_PRIVATE_KEY
 VAPID_SUBJECT
 PUSH_DELIVERY_SECRET
 ```
+
+
+## Phase 7 — Memberships and Flutterwave test integration
+
+AfroLove includes Free, Premium and VIP membership levels, server-enforced like and Super Like limits, Premium rewind and incoming-like access, VIP boosts, payment history, a protected admin monetisation dashboard, Flutterwave Standard checkout, verified callbacks/webhooks and configurable 1:1 split settlement.
+
+The initial prices are configurable from `/admin/monetization`:
+
+- Free: NGN 0
+- Premium: NGN 3,500 monthly
+- VIP: NGN 7,500 monthly
+
+Required before enabling Flutterwave checkout:
+
+```text
+FLW_SECRET_KEY=
+FLW_WEBHOOK_SECRET_HASH=
+FLW_SYNC_SECRET=
+```
+
+Keep checkout disabled until the test payment plans, webhook and both subaccounts have been verified. Never commit these credentials.

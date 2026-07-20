@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { DatingIcon, type DatingIconName } from "@/components/dating/icons";
 import { createClient } from "@/lib/supabase/client";
+import type { MembershipSnapshot } from "@/lib/membership";
 import type {
   DiscoveryProfile,
   InteractionAction,
@@ -219,9 +220,11 @@ function SmallAvatar({
 export function DatingApp({
   memberProfile,
   initialData,
+  membership,
 }: {
   memberProfile: MemberProfile;
   initialData: MatchingInitialData;
+  membership: MembershipSnapshot;
 }) {
   const router = useRouter();
   const supabaseRef = useRef(createClient());
@@ -230,6 +233,7 @@ export function DatingApp({
   const [candidates, setCandidates] = useState(initialData.candidates);
   const [matches, setMatches] = useState(initialData.matches);
   const [incomingLikes, setIncomingLikes] = useState(initialData.incomingLikes);
+  const [incomingLikeCount, setIncomingLikeCount] = useState(initialData.incomingLikeCount);
   const [activeMatch, setActiveMatch] = useState<MatchSummary | null>(null);
   const [messages, setMessages] = useState<MatchMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -473,6 +477,7 @@ export function DatingApp({
         setIncomingLikes((previous) =>
           previous.filter((item) => item.id !== profile.id),
         );
+        setIncomingLikeCount((count) => Math.max(0, count - 1));
         setOverlay({ type: "match", profile, match: result.match });
       } else if (action === "like") {
         showToast(`Like sent to ${profile.displayName}`);
@@ -494,6 +499,11 @@ export function DatingApp({
 
   const swipe = (action: InteractionAction) => {
     if (!current || animating || busyProfileId) return;
+    if (action === "super_like" && membership.features.weekly_super_like_limit === 0) {
+      setOverlay({ type: "premium" });
+      showToast("Super Likes require Premium or VIP");
+      return;
+    }
 
     setDragging(false);
     setAnimating(true);
@@ -534,6 +544,12 @@ export function DatingApp({
   };
 
   const undoSwipe = async () => {
+    if (!membership.features.rewind) {
+      setOverlay({ type: "premium" });
+      showToast("Rewind is available with Premium or VIP");
+      return;
+    }
+
     const previous = history.at(-1);
     if (!previous || busyProfileId) {
       showToast("Nothing to undo yet");
@@ -781,7 +797,7 @@ export function DatingApp({
               memberProfile={memberProfile}
               candidates={filteredCandidates}
               matches={matches}
-              incomingLikeCount={incomingLikes.length}
+              incomingLikeCount={incomingLikeCount}
               showcaseMode={initialData.showcaseMode}
               search={search}
               setSearch={setSearch}
@@ -819,6 +835,8 @@ export function DatingApp({
           {tab === "likes" && (
             <LikesScreen
               likes={incomingLikes}
+              likeCount={incomingLikeCount}
+              canSeeLikes={membership.features.see_likes}
               fallbackProfiles={candidates}
               openPremium={() => setOverlay({ type: "premium" })}
             />
@@ -853,7 +871,8 @@ export function DatingApp({
               memberProfile={memberProfile}
               profile={selfProfile}
               matchCount={matches.length}
-              incomingLikeCount={incomingLikes.length}
+              incomingLikeCount={incomingLikeCount}
+              membership={membership}
               editProfile={() => router.push("/profile/edit")}
               openSettings={() => setOverlay({ type: "settings" })}
               openPremium={() => setOverlay({ type: "premium" })}
@@ -865,7 +884,7 @@ export function DatingApp({
           <BottomNav
             tab={tab}
             unreadCount={unreadCount}
-            likeCount={incomingLikes.length}
+            likeCount={incomingLikeCount}
             setTab={(nextTab) => {
               setTab(nextTab);
               if (nextTab !== "chat") {
@@ -905,12 +924,12 @@ export function DatingApp({
         )}
 
         {overlay?.type === "premium" && (
-          <PremiumOverlay close={() => setOverlay(null)} showToast={showToast} />
+          <PremiumOverlay close={() => setOverlay(null)} />
         )}
 
         {overlay?.type === "notifications" && (
           <NotificationsOverlay
-            likes={incomingLikes.length}
+            likes={incomingLikeCount}
             matches={matches}
             notifications={activityNotifications}
             close={() => setOverlay(null)}
@@ -1431,14 +1450,18 @@ function ActionButton({
 
 function LikesScreen({
   likes,
+  likeCount,
+  canSeeLikes,
   fallbackProfiles,
   openPremium,
 }: {
   likes: DiscoveryProfile[];
+  likeCount: number;
+  canSeeLikes: boolean;
   fallbackProfiles: DiscoveryProfile[];
   openPremium: () => void;
 }) {
-  const visibleLikes = likes.length ? likes : fallbackProfiles.slice(0, 4);
+  const visibleLikes = canSeeLikes ? likes : likes.length ? likes : fallbackProfiles.slice(0, Math.min(4, Math.max(likeCount, 0)));
 
   return (
     <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-7 pt-5">
@@ -1446,46 +1469,30 @@ function LikesScreen({
 
       <div className="mt-5 overflow-hidden rounded-[24px] border border-[#F2C94C]/35 bg-[linear-gradient(135deg,rgba(242,201,76,.2),rgba(242,201,76,.04))] p-5">
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2C94C] text-black">
-            <DatingIcon name="crown" />
-          </span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2C94C] text-black"><DatingIcon name="crown" /></span>
           <div>
-            <p className="text-lg font-black">{likes.length || "New"} profile{likes.length === 1 ? "" : "s"} like you</p>
-            <p className="mt-1 text-xs text-white/45">Unlock Gold to reveal them instantly.</p>
+            <p className="text-lg font-black">{likeCount || "No new"} profile{likeCount === 1 ? "" : "s"} like you</p>
+            <p className="mt-1 text-xs text-white/45">{canSeeLikes ? "Your membership reveals every incoming like." : "Upgrade to Premium or VIP to reveal them instantly."}</p>
           </div>
         </div>
-        <button onClick={openPremium} className="mt-5 w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black">
-          See who likes you
-        </button>
+        {!canSeeLikes && <button onClick={openPremium} className="mt-5 w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black">See who likes you</button>}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         {visibleLikes.map((profile) => (
-          <button
-            key={profile.id}
-            onClick={openPremium}
-            className="relative h-60 overflow-hidden rounded-[22px] border border-white/10 bg-[#171a21] text-left"
-          >
-            <ProfilePhoto profile={profile} sizes="190px" className="scale-105 blur-[13px]" />
-            <div className="absolute inset-0 bg-black/20" />
-            <span className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-[#FFE58C] backdrop-blur-md">
-              <DatingIcon name="lock" className="h-4 w-4" />
-            </span>
+          <button key={profile.id} onClick={canSeeLikes ? () => undefined : openPremium} className="relative h-60 overflow-hidden rounded-[22px] border border-white/10 bg-[#171a21] text-left">
+            <ProfilePhoto profile={profile} sizes="190px" className={canSeeLikes ? "" : "scale-105 blur-[13px]"} />
+            <div className={`absolute inset-0 ${canSeeLikes ? "bg-gradient-to-t from-black/80 via-transparent to-transparent" : "bg-black/20"}`} />
+            {!canSeeLikes && <span className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-[#FFE58C] backdrop-blur-md"><DatingIcon name="lock" className="h-4 w-4" /></span>}
             <div className="absolute inset-x-3 bottom-3">
-              <p className="text-sm font-black">Someone nearby</p>
-              <p className="mt-1 text-[10px] text-white/50">Tap to unlock</p>
+              <p className="text-sm font-black">{canSeeLikes ? profileTitle(profile) : "Someone nearby"}</p>
+              <p className="mt-1 text-[10px] text-white/50">{canSeeLikes ? profile.proximityLabel : "Tap to unlock"}</p>
             </div>
           </button>
         ))}
       </div>
 
-      {!visibleLikes.length && (
-        <div className="mt-8 rounded-3xl border border-dashed border-white/10 p-8 text-center">
-          <DatingIcon name="heart" className="mx-auto h-8 w-8 text-white/20" />
-          <p className="mt-4 text-sm font-bold">No incoming likes yet</p>
-          <p className="mt-1 text-xs text-white/35">Complete profiles and regular activity receive more attention.</p>
-        </div>
-      )}
+      {!likeCount && <div className="mt-8 rounded-3xl border border-dashed border-white/10 p-8 text-center"><DatingIcon name="heart" className="mx-auto h-8 w-8 text-white/20" /><p className="mt-4 text-sm font-bold">No incoming likes yet</p><p className="mt-1 text-xs text-white/35">Complete profiles and regular activity receive more attention.</p></div>}
     </div>
   );
 }
@@ -1658,6 +1665,7 @@ function ProfileScreen({
   profile,
   matchCount,
   incomingLikeCount,
+  membership,
   editProfile,
   openSettings,
   openPremium,
@@ -1666,6 +1674,7 @@ function ProfileScreen({
   profile: DiscoveryProfile;
   matchCount: number;
   incomingLikeCount: number;
+  membership: MembershipSnapshot;
   editProfile: () => void;
   openSettings: () => void;
   openPremium: () => void;
@@ -1685,9 +1694,14 @@ function ProfileScreen({
           </button>
         </div>
         <div className="absolute inset-x-5 bottom-5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-black">{profileTitle(profile)}</h1>
             {profile.verified && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-white"><DatingIcon name="check" className="h-3 w-3" /></span>}
+            {membership.plan !== "free" && (
+              <span className="rounded-full border border-[#F2C94C]/40 bg-[#F2C94C]/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#FFE58C]">
+                {membership.planName}{membership.isTest ? " · Test" : ""}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm font-bold text-[#FFE58C]">{profile.occupation} · {profile.city}</p>
         </div>
@@ -1714,9 +1728,23 @@ function ProfileScreen({
           </div>
         </section>
 
-        <button onClick={openPremium} className="mt-6 flex w-full items-center gap-3 rounded-[22px] border border-[#F2C94C]/30 bg-[#F2C94C]/[0.07] p-4 text-left">
+        <button
+          onClick={membership.plan === "free" ? openPremium : () => window.location.assign("/billing")}
+          className="mt-6 flex w-full items-center gap-3 rounded-[22px] border border-[#F2C94C]/30 bg-[#F2C94C]/[0.07] p-4 text-left"
+        >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F2C94C] text-black"><DatingIcon name="crown" /></span>
-          <span className="flex-1"><span className="block text-sm font-black text-[#FFE58C]">Upgrade to Gold</span><span className="mt-1 block text-[10px] text-white/38">Boost your visibility and unlock incoming likes.</span></span>
+          <span className="flex-1">
+            <span className="block text-sm font-black text-[#FFE58C]">
+              {membership.plan === "free" ? "Upgrade to Premium" : membership.planName + " membership active"}
+            </span>
+            <span className="mt-1 block text-[10px] text-white/38">
+              {membership.plan === "free"
+                ? "Unlock incoming likes, Super Likes, rewind and more."
+                : membership.currentPeriodEnd
+                  ? "Active until " + new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(membership.currentPeriodEnd)) + ". Open billing details."
+                  : "Your membership benefits are active. Open billing details."}
+            </span>
+          </span>
           <DatingIcon name="chevron" className="h-4 w-4 text-[#F2C94C]" />
         </button>
       </div>
@@ -1831,7 +1859,7 @@ function MatchOverlay({ memberProfile, profile, showcase, close, openChat }: { m
   );
 }
 
-function PremiumOverlay({ close, showToast }: { close: () => void; showToast: (text: string) => void }) {
+function PremiumOverlay({ close }: { close: () => void }) {
   const features = ["See every incoming like", "Unlimited likes", "Five Super Likes each week", "Monthly profile boost", "Advanced discovery filters", "Priority matching visibility"];
   return (
     <OverlayShell close={close}>
@@ -1842,8 +1870,8 @@ function PremiumOverlay({ close, showToast }: { close: () => void; showToast: (t
         <p className="mx-auto mt-3 max-w-[320px] text-sm leading-5 text-white/42">Premium tools designed to help serious African singles connect with more intention.</p>
         <div className="mt-7 space-y-2 text-left">{features.map((feature) => <div key={feature} className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3.5"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name="check" className="h-4 w-4" /></span><span className="text-sm font-bold text-white/65">{feature}</span></div>)}</div>
         <div className="mt-7 grid grid-cols-3 gap-2"><PriceCard period="1 month" price="US$4.99" /><PriceCard period="3 months" price="US$10.99" featured /><PriceCard period="12 months" price="US$29.99" /></div>
-        <button onClick={() => showToast("Regional card and mobile-money checkout is the next payment phase") } className="gold-shine mt-5 w-full rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black">Continue with Gold</button>
-        <p className="mt-3 text-[9px] leading-4 text-white/22">Prototype base pricing for client review. Local currencies will be supported before launch.</p>
+        <button onClick={() => { window.location.assign("/premium"); }} className="gold-shine mt-5 w-full rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black">View Premium & VIP plans</button>
+        <p className="mt-3 text-[9px] leading-4 text-white/22">Flutterwave test mode is used until live business verification is completed.</p>
       </div>
     </OverlayShell>
   );
@@ -1888,7 +1916,7 @@ function SettingsOverlay({ settings, setSettings, close, editProfile, requestVer
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
         <AppHeader title="Settings" subtitle="Privacy, safety and account controls" />
         <div className="mt-6 space-y-2"><SettingsButton icon="bell" label="Notification settings" onClick={openNotificationSettings} /><SettingToggle label="Show online status" description="Let matches see when you are active" value={settings.showOnline} onChange={() => setSettings((value) => ({ ...value, showOnline: !value.showOnline }))} /><SettingToggle label="Discovery visibility" description="Allow your profile to appear in discovery" value={settings.discoveryVisible} onChange={() => setSettings((value) => ({ ...value, discoveryVisible: !value.discoveryVisible }))} /></div>
-        <div className="mt-6 space-y-2"><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="check" label="Request profile verification" onClick={requestVerification} /><SettingsButton icon="shield" label="Safety centre" onClick={() => { window.location.href = "/safety"; }} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management will be expanded in the next member settings release.")} /></div>
+        <div className="mt-6 space-y-2"><SettingsButton icon="crown" label="Membership and billing" onClick={() => { window.location.assign("/premium"); }} /><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="check" label="Request profile verification" onClick={requestVerification} /><SettingsButton icon="shield" label="Safety centre" onClick={() => { window.location.href = "/safety"; }} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management will be expanded in the next member settings release.")} /></div>
         <form action="/auth/signout" method="post" className="mt-6"><button className="w-full rounded-2xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-black text-red-300">Sign out</button></form>
       </div>
     </OverlayShell>

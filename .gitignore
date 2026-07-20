@@ -56,3 +56,8 @@ promote-afrolove-*.sh
 *.before-*
 .afrolove-vercel-env-*
 deploy-afrolove-*.sh
+.env
+.env.*
+!.env.example
+.afrolove-*
+fix-afrolove-*.sh
