@@ -35,6 +35,8 @@ export type DiscoveryProfile = {
   joinedLabel: string;
   proximityLabel: string;
   compatibility: number;
+  membershipPlan: "free" | "premium" | "vip";
+  boosted: boolean;
 };
 
 export type MatchMessage = {
@@ -64,6 +66,7 @@ export type MatchingInitialData = {
   incomingLikes: DiscoveryProfile[];
   incomingLikeCount: number;
   showcaseMode: boolean;
+  passRecycleHours: number;
 };
 
 type ProfileRow = Record<string, unknown>;
@@ -197,6 +200,7 @@ function lifestyleLabel(profile: MemberProfile) {
 export function toDiscoveryProfile(
   row: ProfileRow,
   currentProfile: MemberProfile,
+  entitlement: { plan: "free" | "premium" | "vip"; boosted: boolean } = { plan: "free", boosted: false },
 ): DiscoveryProfile {
   const profile = toMemberProfile(row);
   const photos = Array.from(
@@ -233,6 +237,8 @@ export function toDiscoveryProfile(
     joinedLabel: humanActivityLabel(row),
     proximityLabel: proximityLabel(currentProfile, profile),
     compatibility: profileCompatibility(currentProfile, profile),
+    membershipPlan: entitlement.plan,
+    boosted: entitlement.boosted,
   };
 }
 
@@ -263,6 +269,8 @@ export function showcaseProfiles(): DiscoveryProfile[] {
     joinedLabel: profile.joined,
     proximityLabel: `${profile.location}, ${profile.country}`,
     compatibility: profile.compatibility,
+    membershipPlan: "free",
+    boosted: false,
   }));
 }
 
@@ -349,11 +357,11 @@ export async function loadMatchingInitialData(
   userId: string,
   currentProfile: MemberProfile,
 ): Promise<MatchingInitialData> {
-  const [outgoingResult, candidateResult, matchResult, incomingResult] =
+  const [outgoingResult, candidateResult, matchResult, incomingResult, settingsResult] =
     await Promise.all([
       supabase
         .from("interactions")
-        .select("target_id")
+        .select("target_id,action,updated_at")
         .eq("actor_id", userId),
       supabase
         .from("profiles")
@@ -375,22 +383,66 @@ export async function loadMatchingInitialData(
         .eq("target_id", userId)
         .in("action", ["like", "super_like"])
         .order("created_at", { ascending: false }),
+      supabase.rpc("get_discovery_configuration"),
     ]);
 
-  const outgoingIds = new Set(
-    (outgoingResult.data || []).map((row) => String(row.target_id)),
+  const passRecycleHours = Math.max(
+    1,
+    Number((settingsResult.data as { passRecycleHours?: number } | null)?.passRecycleHours || 24),
+  );
+  const passCutoff = Date.now() - passRecycleHours * 60 * 60 * 1000;
+  const excludedIds = new Set(
+    (outgoingResult.data || [])
+      .filter((row) => {
+        const action = String(row.action || "");
+        if (action === "like" || action === "super_like") return true;
+        if (action !== "pass") return false;
+        const updatedAt = new Date(String(row.updated_at || "")).getTime();
+        return Number.isFinite(updatedAt) && updatedAt >= passCutoff;
+      })
+      .map((row) => String(row.target_id)),
   );
 
   const candidateRows = (candidateResult.data || []) as ProfileRow[];
+  const candidateIds = candidateRows.map((row) => String(row.id));
+  const { data: entitlementRows } = candidateIds.length
+    ? await supabase.rpc("get_discovery_entitlements", {
+        p_candidate_ids: candidateIds,
+      })
+    : { data: [] as { user_id: string; plan_slug: string; boosted: boolean }[] };
+
+  const entitlementMap = new Map(
+    ((entitlementRows || []) as { user_id: string; plan_slug: string; boosted: boolean }[]).map((row) => [
+      String(row.user_id),
+      {
+        plan:
+          row.plan_slug === "vip"
+            ? ("vip" as const)
+            : row.plan_slug === "premium"
+              ? ("premium" as const)
+              : ("free" as const),
+        boosted: Boolean(row.boosted),
+      },
+    ]),
+  );
+
   const liveCandidates = candidateRows
     .map((row) => toMemberProfile(row))
-    .filter((candidate) => !outgoingIds.has(candidate.id))
+    .filter((candidate) => !excludedIds.has(candidate.id))
     .filter((candidate) => profileMatchesPreferences(currentProfile, candidate))
     .map((candidate) => {
       const original = candidateRows.find((row) => row.id === candidate.id) || {};
-      return toDiscoveryProfile(original, currentProfile);
+      return toDiscoveryProfile(
+        original,
+        currentProfile,
+        entitlementMap.get(candidate.id) || { plan: "free", boosted: false },
+      );
     })
-    .sort((first, second) => second.compatibility - first.compatibility)
+    .sort((first, second) => {
+      const firstPriority = first.boosted ? 3 : first.membershipPlan === "vip" ? 2 : 0;
+      const secondPriority = second.boosted ? 3 : second.membershipPlan === "vip" ? 2 : 0;
+      return secondPriority - firstPriority || second.compatibility - first.compatibility;
+    })
     .slice(0, 30);
 
   const matchRows = (matchResult.data || []) as MatchRow[];
@@ -434,9 +486,7 @@ export async function loadMatchingInitialData(
   const lastMessageMap = new Map<string, MessageRow>();
 
   for (const row of (recentMessages || []) as MessageRow[]) {
-    if (!lastMessageMap.has(row.match_id)) {
-      lastMessageMap.set(row.match_id, row);
-    }
+    if (!lastMessageMap.has(row.match_id)) lastMessageMap.set(row.match_id, row);
   }
 
   const unreadMap = new Map<string, number>();
@@ -450,7 +500,6 @@ export async function loadMatchingInitialData(
       const otherId = match.user_low === userId ? match.user_high : match.user_low;
       const row = relatedMap.get(otherId);
       if (!row) return null;
-
       const message = lastMessageMap.get(match.id);
       return {
         id: match.id,
@@ -479,5 +528,6 @@ export async function loadMatchingInitialData(
     incomingLikes,
     incomingLikeCount: incomingLikes.length,
     showcaseMode,
+    passRecycleHours,
   };
 }

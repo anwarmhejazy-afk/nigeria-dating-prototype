@@ -20,6 +20,7 @@ export async function PATCH(request: Request) {
     partner_subaccount_id: typeof payload.partnerSubaccountId === "string" ? payload.partnerSubaccountId.trim() || null : null,
     owner_split_ratio: Math.max(1, Number(payload.ownerSplitRatio) || 1),
     partner_split_ratio: Math.max(1, Number(payload.partnerSplitRatio) || 1),
+    pass_recycle_hours: Math.max(1, Math.min(720, Math.round(Number(payload.passRecycleHours) || 24))),
     updated_by: user.id,
     updated_at: new Date().toISOString(),
   };

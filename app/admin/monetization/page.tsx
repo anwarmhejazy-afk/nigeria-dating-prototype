@@ -28,6 +28,7 @@ export default async function AdminMonetizationPage() {
     partner_subaccount_id: null,
     owner_split_ratio: 1,
     partner_split_ratio: 1,
+    pass_recycle_hours: 24,
   };
 
   return (

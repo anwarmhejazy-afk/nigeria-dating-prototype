@@ -61,3 +61,5 @@ deploy-afrolove-*.sh
 !.env.example
 .afrolove-*
 fix-afrolove-*.sh
+repair-afrolove-*.sh
+resume-afrolove-*.sh

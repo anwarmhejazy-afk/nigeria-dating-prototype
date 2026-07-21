@@ -33,15 +33,51 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     [pathname],
   );
 
+  const showFloatingInstall =
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/register";
+
   useEffect(() => {
     setInstalled(isStandalone());
     setOnline(window.navigator.onLine);
 
     if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js", {
-        scope: "/",
-        updateViaCache: "none",
-      });
+      const localDevelopment =
+        process.env.NODE_ENV === "development" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
+
+      if (localDevelopment) {
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) =>
+            Promise.all(
+              registrations.map((registration) =>
+                registration.unregister(),
+              ),
+            ),
+          );
+
+        if ("caches" in window) {
+          void window.caches
+            .keys()
+            .then((keys) =>
+              Promise.all(
+                keys
+                  .filter((key) =>
+                    key.startsWith("afrolove-shell-"),
+                  )
+                  .map((key) => window.caches.delete(key)),
+              ),
+            );
+        }
+      } else {
+        void navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+          updateViaCache: "none",
+        });
+      }
     }
 
     const beforeInstall = (event: Event) => {
@@ -103,11 +139,11 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {!installed && pathname !== "/admin" && !pathname.startsWith("/admin/") && (
+      {!installed && showFloatingInstall && (
         <button
           type="button"
           onClick={() => void install()}
-          className="fixed bottom-5 left-5 z-[120] rounded-full border border-[#F2C94C]/35 bg-[#18150d]/95 px-4 py-3 text-xs font-black text-[#FFE58C] shadow-2xl backdrop-blur-xl transition hover:bg-[#241f10]"
+          className="fixed bottom-4 left-4 z-[120] max-w-[calc(100vw-2rem)] rounded-full border border-[#F2C94C]/35 bg-[#18150d]/95 px-4 py-3 text-xs font-black text-[#FFE58C] shadow-lg backdrop-blur-xl transition hover:bg-[#241f10] sm:bottom-5 sm:left-5"
         >
           Install AfroLove
         </button>

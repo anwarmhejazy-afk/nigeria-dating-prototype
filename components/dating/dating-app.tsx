@@ -27,6 +27,7 @@ type Overlay =
   | { type: "details"; profile: DiscoveryProfile }
   | { type: "match"; profile: DiscoveryProfile; match: MatchSummary }
   | { type: "premium" }
+  | { type: "filters" }
   | { type: "notifications" }
   | { type: "settings" }
   | { type: "safety"; profile: DiscoveryProfile; matchId?: string }
@@ -162,6 +163,8 @@ function memberToDiscovery(member: MemberProfile): DiscoveryProfile {
     joinedLabel: "Your profile",
     proximityLabel: [member.city, member.country].filter(Boolean).join(", ") || "Africa",
     compatibility: member.profile_completion,
+    membershipPlan: "free",
+    boosted: false,
   };
 }
 
@@ -253,18 +256,20 @@ export function DatingApp({
   });
   const [activityNotifications, setActivityNotifications] = useState<ActivityNotification[]>([]);
 
-  const current = candidates[0] || null;
-  const next = candidates[1] || null;
-  const third = candidates[2] || null;
+  const [filters, setFilters] = useState({
+    country: "",
+    minAge: "",
+    maxAge: "",
+    verifiedOnly: false,
+  });
   const unreadCount = matches.reduce((total, match) => total + match.unreadCount, 0);
   const activityUnreadCount = activityNotifications.filter((item) => !item.read_at).length;
   const selfProfile = useMemo(() => memberToDiscovery(memberProfile), [memberProfile]);
 
   const filteredCandidates = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return candidates;
-    return candidates.filter((profile) =>
-      [
+    return candidates.filter((profile) => {
+      const matchesSearch = !query || [
         profile.displayName,
         profile.city,
         profile.state,
@@ -272,12 +277,23 @@ export function DatingApp({
         profile.tribe,
         profile.occupation,
         ...profile.interests,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [candidates, search]);
+      ].join(" ").toLowerCase().includes(query);
+
+      if (!matchesSearch || !membership.features.advanced_filters) return matchesSearch;
+      const country = filters.country.trim().toLowerCase();
+      const minAge = Number(filters.minAge) || 0;
+      const maxAge = Number(filters.maxAge) || 200;
+      return (
+        (!country || profile.country.toLowerCase().includes(country)) &&
+        (profile.age === null || (profile.age >= minAge && profile.age <= maxAge)) &&
+        (!filters.verifiedOnly || profile.verified)
+      );
+    });
+  }, [candidates, filters, membership.features.advanced_filters, search]);
+
+  const current = filteredCandidates[0] || null;
+  const next = filteredCandidates[1] || null;
+  const third = filteredCandidates[2] || null;
 
   const showToast = (text: string) => {
     setToast(text);
@@ -483,6 +499,8 @@ export function DatingApp({
         showToast(`Like sent to ${profile.displayName}`);
       } else if (action === "super_like") {
         showToast(`Super Like sent to ${profile.displayName}`);
+      } else if (action === "pass") {
+        showToast(`${profile.displayName} can return after ${initialData.passRecycleHours} hours`);
       }
 
       setHistory((previous) => [
@@ -491,7 +509,11 @@ export function DatingApp({
       ]);
     } catch (error) {
       setCandidates((previous) => [profile, ...previous]);
-      showToast(error instanceof Error ? error.message : "Unable to save your choice.");
+      const errorMessage = error instanceof Error ? error.message : "Unable to save your choice.";
+      if (errorMessage.includes("Daily like limit") || errorMessage.includes("require Premium")) {
+        setOverlay({ type: "premium" });
+      }
+      showToast(errorMessage);
     } finally {
       setBusyProfileId(null);
     }
@@ -550,7 +572,7 @@ export function DatingApp({
       return;
     }
 
-    const previous = history.at(-1);
+    const previous = [...history].reverse().find((item) => item.action === "pass");
     if (!previous || busyProfileId) {
       showToast("Nothing to undo yet");
       return;
@@ -564,9 +586,13 @@ export function DatingApp({
           method: "DELETE",
           body: JSON.stringify({ targetId: previous.profile.id }),
         });
+      } else {
+        await apiRequest("/api/membership/rewind", {
+          method: "POST",
+        });
       }
 
-      setHistory((items) => items.slice(0, -1));
+      setHistory((items) => items.filter((item) => item !== previous));
       setCandidates((items) => [
         previous.profile,
         ...items.filter((item) => item.id !== previous.profile.id),
@@ -806,6 +832,7 @@ export function DatingApp({
               openMatch={openMatch}
               openNotifications={() => setOverlay({ type: "notifications" })}
               openPremium={() => setOverlay({ type: "premium" })}
+              openFilters={() => membership.features.advanced_filters ? setOverlay({ type: "filters" }) : setOverlay({ type: "premium" })}
               unreadCount={unreadCount + activityUnreadCount}
             />
           )}
@@ -828,6 +855,9 @@ export function DatingApp({
               openDetails={(profile) => setOverlay({ type: "details", profile })}
               openSafety={(profile) => setOverlay({ type: "safety", profile })}
               openPremium={() => setOverlay({ type: "premium" })}
+              openFilters={() => membership.features.advanced_filters ? setOverlay({ type: "filters" }) : setOverlay({ type: "premium" })}
+              membershipPlan={membership.plan}
+              passRecycleHours={initialData.passRecycleHours}
               refresh={() => window.location.reload()}
             />
           )}
@@ -863,6 +893,7 @@ export function DatingApp({
                 setOverlay({ type: "safety", profile, matchId })
               }
               showToast={showToast}
+              canSeeReadReceipts={membership.features.read_receipts}
             />
           )}
 
@@ -925,6 +956,15 @@ export function DatingApp({
 
         {overlay?.type === "premium" && (
           <PremiumOverlay close={() => setOverlay(null)} />
+        )}
+
+        {overlay?.type === "filters" && (
+          <FiltersOverlay
+            filters={filters}
+            setFilters={setFilters}
+            resultCount={filteredCandidates.length}
+            close={() => setOverlay(null)}
+          />
         )}
 
         {overlay?.type === "notifications" && (
@@ -1016,6 +1056,7 @@ function HomeScreen({
   openMatch,
   openNotifications,
   openPremium,
+  openFilters,
   unreadCount,
 }: {
   memberProfile: MemberProfile;
@@ -1030,6 +1071,7 @@ function HomeScreen({
   openMatch: (match: MatchSummary) => void;
   openNotifications: () => void;
   openPremium: () => void;
+  openFilters: () => void;
   unreadCount: number;
 }) {
   const firstName = memberProfile.display_name.split(" ")[0] || "there";
@@ -1083,7 +1125,7 @@ function HomeScreen({
           className="w-full rounded-2xl border border-white/10 bg-white/[0.045] py-3.5 pl-12 pr-12 text-sm outline-none transition focus:border-[#F2C94C]/50"
         />
         <button
-          onClick={() => setTab("discover")}
+          onClick={openFilters}
           className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#F2C94C]"
           aria-label="Open discovery"
         >
@@ -1111,6 +1153,8 @@ function HomeScreen({
             >
               <ProfilePhoto profile={profile} sizes="128px" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent" />
+              {profile.boosted && <span className="absolute left-2 top-2 rounded-full bg-[#F2C94C] px-2 py-1 text-[8px] font-black text-black">BOOSTED</span>}
+              {profile.membershipPlan === "vip" && !profile.boosted && <span className="absolute left-2 top-2 rounded-full border border-[#F2C94C]/50 bg-black/55 px-2 py-1 text-[8px] font-black text-[#FFE58C]">VIP</span>}
               <div className="absolute inset-x-3 bottom-3">
                 <p className="truncate text-sm font-black">{profileTitle(profile)}</p>
                 <p className="mt-0.5 truncate text-[10px] text-[#FFE58C]">
@@ -1216,6 +1260,9 @@ function DiscoverScreen({
   openDetails,
   openSafety,
   openPremium,
+  openFilters,
+  membershipPlan,
+  passRecycleHours,
   refresh,
 }: {
   current: DiscoveryProfile | null;
@@ -1234,6 +1281,9 @@ function DiscoverScreen({
   openDetails: (profile: DiscoveryProfile) => void;
   openSafety: (profile: DiscoveryProfile) => void;
   openPremium: () => void;
+  openFilters: () => void;
+  membershipPlan: "free" | "premium" | "vip";
+  passRecycleHours: number;
   refresh: () => void;
 }) {
   const likeOpacity = Math.min(Math.max(drag.x / 100, 0), 1);
@@ -1255,7 +1305,7 @@ function DiscoverScreen({
               <DatingIcon name="undo" className="h-4 w-4" />
             </button>
             <button
-              onClick={openPremium}
+              onClick={openFilters}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/10 text-[#F2C94C]"
               aria-label="Discovery filters"
             >
@@ -1266,11 +1316,13 @@ function DiscoverScreen({
       />
 
       <button
-        onClick={openPremium}
+        onClick={membershipPlan === "free" ? openPremium : openFilters}
         className="gold-shine mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#F2C94C,#FFE58C)] py-2 text-xs font-black text-black"
       >
-        <DatingIcon name="crown" className="h-4 w-4" />
-        Upgrade to see who likes you
+        <DatingIcon name={membershipPlan === "free" ? "crown" : "filter"} className="h-4 w-4" />
+        {membershipPlan === "free"
+          ? "Upgrade for unlimited likes, filters and rewind"
+          : `Advanced filters active · passes return after ${passRecycleHours}h`}
       </button>
 
       <div className="relative mt-3 min-h-0 flex-1">
@@ -1324,6 +1376,8 @@ function DiscoverScreen({
                 {current.online && (
                   <span className="rounded-full bg-emerald-400/85 px-2.5 py-1 text-[9px] font-black text-[#05291d]">● Online</span>
                 )}
+                {current.boosted && <span className="rounded-full bg-[#F2C94C] px-2.5 py-1 text-[9px] font-black text-black">BOOSTED</span>}
+                {current.membershipPlan === "vip" && <span className="rounded-full border border-[#F2C94C]/45 bg-black/55 px-2.5 py-1 text-[9px] font-black text-[#FFE58C]">VIP</span>}
                 {current.source === "showcase" && (
                   <span className="rounded-full bg-blue-400/80 px-2.5 py-1 text-[9px] font-black text-[#07172c]">SHOWCASE</span>
                 )}
@@ -1512,6 +1566,7 @@ function ChatScreen({
   unmatch,
   openSafety,
   showToast,
+  canSeeReadReceipts,
 }: {
   memberId: string;
   matches: MatchSummary[];
@@ -1527,6 +1582,7 @@ function ChatScreen({
   unmatch: (match: MatchSummary) => void;
   openSafety: (profile: DiscoveryProfile, matchId: string) => void;
   showToast: (text: string) => void;
+  canSeeReadReceipts: boolean;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -1572,7 +1628,7 @@ function ChatScreen({
                       <p className="whitespace-pre-wrap text-sm leading-5">{item.body}</p>
                       <div className={`mt-1 flex items-center justify-end gap-1 text-[8px] ${mine ? "text-black/45" : "text-white/25"}`}>
                         {relativeTime(item.createdAt)}
-                        {mine && <span>{item.readAt ? "✓✓" : "✓"}</span>}
+                        {mine && <span>{canSeeReadReceipts && item.readAt ? "✓✓" : "✓"}</span>}
                       </div>
                     </div>
                   </div>
@@ -1795,6 +1851,34 @@ function OverlayShell({ children, close }: { children: React.ReactNode; close: (
   );
 }
 
+function FiltersOverlay({
+  filters,
+  setFilters,
+  resultCount,
+  close,
+}: {
+  filters: { country: string; minAge: string; maxAge: string; verifiedOnly: boolean };
+  setFilters: (value: { country: string; minAge: string; maxAge: string; verifiedOnly: boolean }) => void;
+  resultCount: number;
+  close: () => void;
+}) {
+  const inputClass = "mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-[#F2C94C]/55";
+  return (
+    <OverlayShell close={close}>
+      <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
+        <AppHeader title="Advanced filters" subtitle="Premium and VIP discovery controls" />
+        <div className="mt-7 space-y-5">
+          <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">Country</span><input className={inputClass} value={filters.country} onChange={(event) => setFilters({ ...filters, country: event.target.value })} placeholder="For example Ghana or Nigeria" /></label>
+          <div className="grid grid-cols-2 gap-3"><label><span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">Minimum age</span><input type="number" min="18" max="100" className={inputClass} value={filters.minAge} onChange={(event) => setFilters({ ...filters, minAge: event.target.value })} placeholder="18" /></label><label><span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">Maximum age</span><input type="number" min="18" max="100" className={inputClass} value={filters.maxAge} onChange={(event) => setFilters({ ...filters, maxAge: event.target.value })} placeholder="100" /></label></div>
+          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><input type="checkbox" checked={filters.verifiedOnly} onChange={(event) => setFilters({ ...filters, verifiedOnly: event.target.checked })} /><span><span className="block text-sm font-black">Verified members only</span><span className="mt-1 block text-xs text-white/35">Only show approved identity profiles.</span></span></label>
+          <div className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.07] p-4 text-center"><p className="text-2xl font-black text-[#FFE58C]">{resultCount}</p><p className="mt-1 text-xs text-white/40">profiles match these filters</p></div>
+          <div className="grid grid-cols-2 gap-3"><button onClick={() => setFilters({ country: "", minAge: "", maxAge: "", verifiedOnly: false })} className="rounded-2xl border border-white/10 py-3 text-sm font-black text-white/55">Clear</button><button onClick={close} className="rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black">Show profiles</button></div>
+        </div>
+      </div>
+    </OverlayShell>
+  );
+}
+
 function DetailsOverlay({ profile, close, like, openSafety }: { profile: DiscoveryProfile; close: () => void; like: () => void; openSafety: () => void }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = profile.photos.length ? profile.photos : profile.avatarUrl ? [profile.avatarUrl] : [];
@@ -1869,7 +1953,7 @@ function PremiumOverlay({ close }: { close: () => void }) {
         <h1 className="mt-2 text-3xl font-black">Match with more intention.</h1>
         <p className="mx-auto mt-3 max-w-[320px] text-sm leading-5 text-white/42">Premium tools designed to help serious African singles connect with more intention.</p>
         <div className="mt-7 space-y-2 text-left">{features.map((feature) => <div key={feature} className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3.5"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name="check" className="h-4 w-4" /></span><span className="text-sm font-bold text-white/65">{feature}</span></div>)}</div>
-        <div className="mt-7 grid grid-cols-3 gap-2"><PriceCard period="1 month" price="US$4.99" /><PriceCard period="3 months" price="US$10.99" featured /><PriceCard period="12 months" price="US$29.99" /></div>
+        <div className="mt-7 grid grid-cols-2 gap-2"><PriceCard period="Premium" price="₦3,500/month" featured /><PriceCard period="VIP" price="₦7,500/month" /></div>
         <button onClick={() => { window.location.assign("/premium"); }} className="gold-shine mt-5 w-full rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black">View Premium & VIP plans</button>
         <p className="mt-3 text-[9px] leading-4 text-white/22">Flutterwave test mode is used until live business verification is completed.</p>
       </div>

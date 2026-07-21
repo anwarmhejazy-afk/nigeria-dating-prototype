@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { formatMoney, type MembershipPlan, type MembershipSnapshot } from "@/lib/membership";
 
@@ -55,14 +57,23 @@ export function MembershipDashboard({
   transactions,
   checkoutConfigured,
   planPrices,
+  member,
 }: {
   snapshot: MembershipSnapshot;
   transactions: Transaction[];
   checkoutConfigured: boolean;
   planPrices: { currency: string; premium: number; vip: number };
+  member: {
+    displayName: string;
+    avatarUrl: string | null;
+  };
 }) {
+  const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [boostsThisMonth, setBoostsThisMonth] = useState(
+    snapshot.usage.boostsThisMonth,
+  );
 
   const checkout = async (plan: "premium" | "vip") => {
     setBusy(plan);
@@ -91,10 +102,42 @@ export function MembershipDashboard({
   };
 
   const boost = async () => {
+    const monthlyLimit = Math.max(
+      0,
+      snapshot.features.monthly_boosts,
+    );
+
+    if (
+      monthlyLimit > 0 &&
+      boostsThisMonth >= monthlyLimit
+    ) {
+      setMessage(
+        "Your monthly VIP boost has already been used.",
+      );
+      return;
+    }
+
     setBusy("boost");
-    const response = await fetch("/api/billing/boost", { method: "POST" });
+    setMessage("");
+
+    const response = await fetch("/api/billing/boost", {
+      method: "POST",
+    });
     const payload = await response.json();
-    setMessage(response.ok ? "Your VIP profile boost is active for 30 minutes." : payload.error || "Unable to activate boost.");
+
+    if (response.ok) {
+      setBoostsThisMonth((current) => current + 1);
+      setMessage(
+        "Your VIP profile boost is active for 30 minutes.",
+      );
+      router.refresh();
+    } else {
+      setMessage(
+        payload.error ||
+          "Unable to activate boost.",
+      );
+    }
+
     setBusy(null);
   };
 
@@ -103,7 +146,42 @@ export function MembershipDashboard({
       <header className="border-b border-white/[0.08] bg-[#090b10]/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <BrandLogo size="sm" />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <div
+              data-testid="billing-member-identity"
+              className="flex max-w-[240px] items-center gap-2 rounded-full border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] py-1.5 pl-1.5 pr-3"
+            >
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.06]">
+                {member.avatarUrl ? (
+                  <Image
+                    src={member.avatarUrl}
+                    alt={member.displayName}
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs font-black text-[#FFE58C]">
+                    {member.displayName
+                      .split(" ")
+                      .map((part) => part[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-xs font-black text-white">
+                  {member.displayName}
+                </p>
+                <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#F2C94C]">
+                  {snapshot.planName} member
+                </p>
+              </div>
+            </div>
+
             <a href="/app" className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/60">Back to app</a>
             <a href="/billing" className="rounded-full bg-[#F2C94C] px-4 py-2 text-xs font-black text-black">Billing</a>
           </div>
@@ -131,6 +209,25 @@ export function MembershipDashboard({
         )}
 
         {message && <div className="mt-5 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.07] px-4 py-3 text-sm font-bold text-[#FFE58C]">{message}</div>}
+
+
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <UsageCard label="Likes today" value={String(snapshot.usage.likesToday)} hint={snapshot.features.daily_like_limit === null ? "Unlimited" : `Free limit ${snapshot.features.daily_like_limit}`} />
+          <UsageCard label="Super Likes this week" value={String(snapshot.usage.superLikesThisWeek)} hint={`${snapshot.features.weekly_super_like_limit} available weekly`} />
+          <UsageCard label="Rewinds today" value={String(snapshot.usage.rewindsToday)} hint={snapshot.features.rewind ? "Enabled" : "Premium required"} />
+          <UsageCard
+            label="Boosts this month"
+            value={String(boostsThisMonth)}
+            hint={
+              snapshot.plan === "vip"
+                ? `${Math.max(
+                    1,
+                    snapshot.features.monthly_boosts,
+                  )} included monthly`
+                : "VIP required"
+            }
+          />
+        </section>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {plans.map((plan) => {
@@ -167,7 +264,28 @@ export function MembershipDashboard({
         {snapshot.plan === "vip" && (
           <div className="mt-6 rounded-3xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] p-5 sm:flex sm:items-center sm:justify-between">
             <div><h2 className="text-lg font-black">VIP monthly profile boost</h2><p className="mt-1 text-sm text-white/40">Move your profile higher in discovery for 30 minutes.</p></div>
-            <button onClick={() => void boost()} disabled={busy !== null} className="mt-4 rounded-2xl bg-[#F2C94C] px-5 py-3 text-sm font-black text-black disabled:opacity-50 sm:mt-0">Activate boost</button>
+            <button
+              onClick={() => void boost()}
+              disabled={
+                busy !== null ||
+                boostsThisMonth >=
+                  Math.max(
+                    1,
+                    snapshot.features.monthly_boosts,
+                  )
+              }
+              className="mt-4 rounded-2xl bg-[#F2C94C] px-5 py-3 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-45 sm:mt-0"
+            >
+              {boostsThisMonth >=
+              Math.max(
+                1,
+                snapshot.features.monthly_boosts,
+              )
+                ? "Monthly boost used"
+                : busy === "boost"
+                  ? "Activating…"
+                  : "Activate boost"}
+            </button>
           </div>
         )}
 
@@ -190,4 +308,8 @@ export function MembershipDashboard({
       </section>
     </main>
   );
+}
+
+function UsageCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return <div className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-4"><p className="text-2xl font-black text-[#FFE58C]">{value}</p><p className="mt-1 text-sm font-black">{label}</p><p className="mt-1 text-xs text-white/35">{hint}</p></div>;
 }

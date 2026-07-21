@@ -1,4 +1,4 @@
-const CACHE_NAME = "afrolove-shell-v3";
+const CACHE_NAME = "afrolove-shell-v9";
 const OFFLINE_URL = "/offline";
 const APP_SHELL = [
   "/",
@@ -43,7 +43,13 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/") ||
+    url.pathname.startsWith("/_next/")
+  ) {
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(
@@ -56,7 +62,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname.startsWith("/brand/")
   ) {
