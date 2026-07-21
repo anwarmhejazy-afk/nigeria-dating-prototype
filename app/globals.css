@@ -216,3 +216,208 @@ body {
   color: #f2c94c;
   font-weight: 800;
 }
+
+/* AFROLOVE HERO SLIDESHOW CSS START */
+.afrolove-hero-slideshow {
+  background:
+    radial-gradient(
+      circle at 72% 30%,
+      rgba(242, 201, 76, 0.1),
+      transparent 34%
+    ),
+    #090b10;
+}
+
+.afrolove-hero-slide {
+  opacity: 0;
+  animation: afroloveHeroCrossfade 24s infinite ease-in-out;
+  will-change: opacity, transform;
+}
+
+.afrolove-hero-photo {
+  filter: saturate(0.84) contrast(1.06) brightness(0.8);
+  transform: scale(1.04);
+}
+
+@keyframes afroloveHeroCrossfade {
+  0% {
+    opacity: 1;
+    transform: scale(1.015);
+  }
+
+  27% {
+    opacity: 1;
+  }
+
+  36% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@media (max-width: 639px) {
+  .afrolove-hero-photo {
+    filter: saturate(0.72) contrast(1.08) brightness(0.56);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .afrolove-hero-slide {
+    animation: none;
+    opacity: 0;
+    transform: none;
+  }
+
+  .afrolove-hero-slide:first-child {
+    opacity: 1;
+  }
+}
+/* AFROLOVE HERO SLIDESHOW CSS END */
+
+/* AFROLOVE MOBILE HERO POLISH START */
+@media (max-width: 639px) {
+  .afrolove-hero-slideshow {
+    opacity: 0.82;
+  }
+
+  .afrolove-hero-photo {
+    background-position: 50% 18%;
+    filter: saturate(0.8) contrast(1.06) brightness(0.58);
+    transform: scale(1.03);
+  }
+}
+/* AFROLOVE MOBILE HERO POLISH END */
+
+/* AFROLOVE MOBILE SLIDESHOW EMPHASIS START */
+@media (max-width: 639px) {
+  .afrolove-hero-slideshow {
+    opacity: 0.88;
+  }
+
+  .afrolove-hero-slide {
+    animation-name: afroloveMobileHeroCrossfade;
+    animation-duration: 21s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .afrolove-hero-slide:nth-child(1) {
+    animation-delay: 0s !important;
+  }
+
+  .afrolove-hero-slide:nth-child(2) {
+    animation-delay: 7s !important;
+  }
+
+  .afrolove-hero-slide:nth-child(3) {
+    animation-delay: 14s !important;
+  }
+
+  .afrolove-hero-photo {
+    background-position: 50% 16%;
+    filter: saturate(0.84) contrast(1.05) brightness(0.62);
+    will-change: transform, background-position;
+  }
+
+  .afrolove-hero-slide:nth-child(1) .afrolove-hero-photo {
+    animation: afroloveMobilePanOne 7s ease-in-out infinite alternate;
+  }
+
+  .afrolove-hero-slide:nth-child(2) .afrolove-hero-photo {
+    animation: afroloveMobilePanTwo 7s ease-in-out infinite alternate;
+  }
+
+  .afrolove-hero-slide:nth-child(3) .afrolove-hero-photo {
+    animation: afroloveMobilePanThree 7s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes afroloveMobileHeroCrossfade {
+  0% {
+    opacity: 0;
+  }
+
+  4% {
+    opacity: 1;
+  }
+
+  27% {
+    opacity: 1;
+  }
+
+  33% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes afroloveMobilePanOne {
+  from {
+    transform: scale(1.04) translate3d(-1.5%, 0, 0);
+  }
+
+  to {
+    transform: scale(1.11) translate3d(2%, -1%, 0);
+  }
+}
+
+@keyframes afroloveMobilePanTwo {
+  from {
+    transform: scale(1.11) translate3d(2%, -1%, 0);
+  }
+
+  to {
+    transform: scale(1.04) translate3d(-2%, 1%, 0);
+  }
+}
+
+@keyframes afroloveMobilePanThree {
+  from {
+    transform: scale(1.05) translate3d(0, 1%, 0);
+  }
+
+  to {
+    transform: scale(1.12) translate3d(-1%, -2%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .afrolove-hero-slide,
+  .afrolove-hero-photo {
+    animation: none !important;
+  }
+
+  .afrolove-hero-slide {
+    opacity: 0;
+  }
+
+  .afrolove-hero-slide:first-child {
+    opacity: 1;
+  }
+}
+/* AFROLOVE MOBILE SLIDESHOW EMPHASIS END */
+
+/* AFROLOVE LANDING FOOTER FIX START */
+[data-testid="landing-footer"] {
+  overflow: visible;
+}
+
+[data-testid="landing-footer"] a {
+  white-space: nowrap;
+  line-height: 1.25rem;
+}
+
+@media (max-width: 639px) {
+  [data-testid="landing-footer"] {
+    padding-inline: 1.25rem;
+  }
+}
+/* AFROLOVE LANDING FOOTER FIX END */
