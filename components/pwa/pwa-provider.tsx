@@ -34,7 +34,6 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   );
 
   const showFloatingInstall =
-    pathname === "/" ||
     pathname === "/login" ||
     pathname === "/register";
 
@@ -143,7 +142,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => void install()}
-          className="fixed bottom-4 left-4 z-[120] max-w-[calc(100vw-2rem)] rounded-full border border-[#F2C94C]/35 bg-[#18150d]/95 px-4 py-3 text-xs font-black text-[#FFE58C] shadow-lg backdrop-blur-xl transition hover:bg-[#241f10] sm:bottom-5 sm:left-5"
+          className="fixed bottom-3 left-1/2 z-[120] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 whitespace-nowrap rounded-full border border-[#F2C94C]/35 bg-[#18150d]/95 px-4 py-2.5 text-[11px] font-black text-[#FFE58C] shadow-lg backdrop-blur-xl transition hover:bg-[#241f10] sm:bottom-5 sm:left-5 sm:max-w-[calc(100vw-2rem)] sm:translate-x-0 sm:px-4 sm:py-3 sm:text-xs"
         >
           Install AfroLove
         </button>
