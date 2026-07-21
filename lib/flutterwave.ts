@@ -72,11 +72,51 @@ export async function verifyFlutterwaveTransaction(transactionId: string) {
   );
 }
 
-export function isValidFlutterwaveWebhook(rawBody: string, signature: string | null) {
-  const secret = process.env.FLW_WEBHOOK_SECRET_HASH?.trim() || "";
-  if (!secret || !signature) return false;
-  const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("base64");
-  const first = Buffer.from(expected);
-  const second = Buffer.from(signature);
-  return first.length === second.length && crypto.timingSafeEqual(first, second);
+function timingSafeTextEqual(
+  firstValue: string,
+  secondValue: string,
+) {
+  const first = Buffer.from(firstValue);
+  const second = Buffer.from(secondValue);
+
+  return (
+    first.length === second.length &&
+    crypto.timingSafeEqual(first, second)
+  );
+}
+
+export function isValidFlutterwaveWebhook(
+  rawBody: string,
+  flutterwaveSignature: string | null,
+  verificationHash: string | null,
+) {
+  const secret =
+    process.env.FLW_WEBHOOK_SECRET_HASH?.trim() || "";
+
+  if (!secret) return false;
+
+  if (flutterwaveSignature) {
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(rawBody)
+      .digest("base64");
+
+    if (
+      timingSafeTextEqual(
+        expected,
+        flutterwaveSignature,
+      )
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    verificationHash &&
+    timingSafeTextEqual(secret, verificationHash)
+  ) {
+    return true;
+  }
+
+  return false;
 }

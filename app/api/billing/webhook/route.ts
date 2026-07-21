@@ -17,12 +17,39 @@ function webhookClient() {
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
-  const signature = request.headers.get("flutterwave-signature");
-  if (!isValidFlutterwaveWebhook(rawBody, signature)) {
-    return Response.json({ error: "Invalid webhook signature." }, { status: 401 });
+  const flutterwaveSignature = request.headers.get(
+    "flutterwave-signature",
+  );
+  const verificationHash = request.headers.get(
+    "verif-hash",
+  );
+
+  if (
+    !isValidFlutterwaveWebhook(
+      rawBody,
+      flutterwaveSignature,
+      verificationHash,
+    )
+  ) {
+    return Response.json(
+      { error: "Invalid webhook signature." },
+      { status: 401 },
+    );
   }
 
-  const payload = JSON.parse(rawBody) as Record<string, unknown>;
+  let payload: Record<string, unknown>;
+
+  try {
+    payload = JSON.parse(rawBody) as Record<
+      string,
+      unknown
+    >;
+  } catch {
+    return Response.json(
+      { error: "Invalid webhook payload." },
+      { status: 400 },
+    );
+  }
   const event = text(payload.type || payload.event);
   const eventData = payload.data && typeof payload.data === "object" ? payload.data as Record<string, unknown> : {};
 
