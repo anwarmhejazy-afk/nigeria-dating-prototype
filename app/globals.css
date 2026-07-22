@@ -421,3 +421,50 @@ body {
   }
 }
 /* AFROLOVE LANDING FOOTER FIX END */
+
+/* AFROLOVE CLEARER MOBILE SLIDESHOW V2 START */
+@media (max-width: 639px) {
+  .afrolove-hero-slideshow {
+    opacity: 0.98;
+  }
+
+  .afrolove-hero-photo {
+    background-position: 62% 14%;
+    filter: saturate(0.94) contrast(1.03) brightness(0.76);
+  }
+
+  .afrolove-hero-overlay-horizontal {
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(5, 7, 11, 0.78) 0%,
+        rgba(5, 7, 11, 0.66) 38%,
+        rgba(5, 7, 11, 0.28) 72%,
+        rgba(5, 7, 11, 0.38) 100%
+      ) !important;
+  }
+
+  .afrolove-hero-overlay-vertical {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(7, 9, 13, 0.12) 0%,
+        rgba(7, 9, 13, 0.06) 48%,
+        rgba(7, 9, 13, 0.5) 100%
+      ) !important;
+  }
+
+  .afrolove-hero-copy-panel {
+    background-color: rgba(0, 0, 0, 0.14);
+    backdrop-filter: blur(1px);
+  }
+
+  .afrolove-hero-copy-panel h1 {
+    text-shadow: 0 3px 22px rgba(0, 0, 0, 0.8);
+  }
+
+  .afrolove-hero-copy-panel p {
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.72);
+  }
+}
+/* AFROLOVE CLEARER MOBILE SLIDESHOW V2 END */

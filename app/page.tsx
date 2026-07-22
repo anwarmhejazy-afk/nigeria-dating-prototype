@@ -96,11 +96,11 @@ export default async function LandingPage() {
             ))}
           </div>
 
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,11,0.94)_0%,rgba(5,7,11,0.86)_38%,rgba(5,7,11,0.52)_70%,rgba(5,7,11,0.68)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.25)_0%,rgba(7,9,13,0.12)_46%,rgba(7,9,13,0.72)_100%)]" />
+          <div className="afrolove-hero-overlay-horizontal pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,11,0.94)_0%,rgba(5,7,11,0.86)_38%,rgba(5,7,11,0.52)_70%,rgba(5,7,11,0.68)_100%)]" />
+          <div className="afrolove-hero-overlay-vertical pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.25)_0%,rgba(7,9,13,0.12)_46%,rgba(7,9,13,0.72)_100%)]" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(255,76,76,0.22),transparent_30%),radial-gradient(circle_at_85%_75%,rgba(242,201,76,0.16),transparent_34%)]" />
           {/* AFROLOVE HERO SLIDESHOW TEST END */}
-          <div className="relative z-10 rounded-[24px] border border-white/[0.06] bg-black/25 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-[2px] sm:rounded-[28px] sm:p-7 lg:-ml-3 lg:p-8">
+          <div className="afrolove-hero-copy-panel relative z-10 rounded-[24px] border border-white/[0.06] bg-black/25 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-[2px] sm:rounded-[28px] sm:p-7 lg:-ml-3 lg:p-8">
             <span className="inline-flex rounded-full border border-[#ff5252]/25 bg-[#ff5252]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#ffb2b2]">
               Premium pan-African dating
             </span>
