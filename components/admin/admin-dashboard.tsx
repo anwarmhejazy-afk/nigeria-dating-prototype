@@ -97,10 +97,10 @@ function StatusBadge({ value }: { value: string }) {
 
 function Metric({ label, value, hint }: { label: string; value: number; hint: string }) {
   return (
-    <div className="rounded-3xl border border-white/[0.08] bg-white/[0.035] p-5">
-      <p className="text-3xl font-black text-[#FFE58C]">{value.toLocaleString()}</p>
-      <p className="mt-2 text-sm font-black">{label}</p>
-      <p className="mt-1 text-xs leading-5 text-white/35">{hint}</p>
+    <div className="rounded-3xl border border-white/[0.08] bg-white/[0.035] p-4 sm:p-5">
+      <p className="text-2xl font-black text-[#FFE58C] sm:text-3xl">{value.toLocaleString()}</p>
+      <p className="mt-2 text-xs font-black sm:text-sm">{label}</p>
+      <p className="mt-1 text-[10px] leading-4 text-white/35 sm:text-xs sm:leading-5">{hint}</p>
     </div>
   );
 }
@@ -158,39 +158,74 @@ export function AdminDashboard({
 
   return (
     <main className="min-h-screen bg-[#07080b] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#090b10]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 lg:px-8">
-          <BrandLogo size="sm" className="shrink-0" />
-          <div className="h-8 w-px bg-white/10" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-black">Safety & Administration</p>
-            <p className="text-[11px] text-white/35">Selective evidence review. Every action is audited.</p>
+      <header
+        data-testid="admin-responsive-header"
+        className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#090b10]/95 backdrop-blur-xl"
+      >
+        <div className="mx-auto max-w-[1500px] px-3 py-3 sm:px-4 sm:py-4 lg:px-8">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 sm:flex sm:gap-4">
+            <BrandLogo size="sm" className="shrink-0" />
+
+            <div className="hidden h-8 w-px bg-white/10 sm:block" />
+
+            <div className="min-w-0 sm:flex-1">
+              <p className="truncate text-sm font-black">
+                <span className="sm:hidden">Safety Admin</span>
+                <span className="hidden sm:inline">
+                  Safety & Administration
+                </span>
+              </p>
+              <p className="hidden text-[11px] text-white/35 sm:block">
+                Selective evidence review. Every action is audited.
+              </p>
+            </div>
+
+            <div
+              data-testid="admin-mobile-actions"
+              className="col-span-2 grid grid-cols-2 gap-2 sm:ml-auto sm:flex sm:items-center sm:gap-2"
+            >
+              <div
+                data-testid="current-admin-name"
+                className="min-w-0 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-center sm:order-1 sm:text-right"
+              >
+                <p className="text-[8px] font-black uppercase tracking-[0.12em] text-white/35 sm:text-[9px] sm:tracking-[0.16em]">
+                  Signed in as
+                </p>
+                <p className="mt-0.5 truncate text-[11px] font-black text-[#FFE58C] sm:text-xs">
+                  {currentAdminName}
+                </p>
+              </div>
+
+              <form
+                action="/auth/signout"
+                method="post"
+                className="w-full sm:order-4 sm:w-auto"
+              >
+                <button className="flex w-full items-center justify-center rounded-full bg-[#F2C94C] px-3 py-2.5 text-[11px] font-black text-black sm:px-4 sm:py-2 sm:text-xs">
+                  Sign out
+                </button>
+              </form>
+
+              <a
+                href="/admin/monetization"
+                className="flex items-center justify-center rounded-full border border-[#F2C94C]/25 px-3 py-2.5 text-center text-[11px] font-black text-[#FFE58C] hover:bg-[#F2C94C]/10 sm:order-2 sm:px-4 sm:py-2 sm:text-xs"
+              >
+                Monetisation
+              </a>
+
+              <a
+                href="/app"
+                className="flex items-center justify-center rounded-full border border-white/10 px-3 py-2.5 text-center text-[11px] font-black text-white/55 hover:bg-white/5 sm:order-3 sm:px-4 sm:py-2 sm:text-xs"
+              >
+                Member app
+              </a>
+            </div>
           </div>
-          <div
-            data-testid="current-admin-name"
-            className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-right"
-          >
-            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">
-              Signed in as
-            </p>
-            <p className="mt-0.5 text-xs font-black text-[#FFE58C]">
-              {currentAdminName}
-            </p>
-          </div>
-          <a href="/admin/monetization" className="rounded-full border border-[#F2C94C]/25 px-4 py-2 text-xs font-black text-[#FFE58C] hover:bg-[#F2C94C]/10">
-            Monetisation
-          </a>
-          <a href="/app" className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55 hover:bg-white/5">
-            Member app
-          </a>
-          <form action="/auth/signout" method="post">
-            <button className="rounded-full bg-[#F2C94C] px-4 py-2 text-xs font-black text-black">Sign out</button>
-          </form>
         </div>
       </header>
 
       <div className="mx-auto grid max-w-[1500px] gap-5 px-4 py-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:px-8">
-        <aside className="h-fit rounded-3xl border border-white/[0.08] bg-white/[0.025] p-3 lg:sticky lg:top-24">
+        <aside data-testid="admin-mobile-navigation" className="grid h-fit grid-cols-2 gap-2 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-3 lg:sticky lg:top-24 lg:block">
           {([
             ["overview", "Overview"],
             ["reports", `Safety reports (${data.metrics.openReports})`],
@@ -201,18 +236,18 @@ export function AdminDashboard({
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`mb-1 w-full rounded-2xl px-4 py-3 text-left text-sm font-black transition ${tab === id ? "bg-[#F2C94C] text-black" : "text-white/50 hover:bg-white/5 hover:text-white"}`}
+              className={`w-full rounded-2xl px-3 py-3 text-center text-xs font-black transition lg:mb-1 lg:px-4 lg:text-left lg:text-sm ${tab === id ? "bg-[#F2C94C] text-black" : "text-white/50 hover:bg-white/5 hover:text-white"}`}
             >
               {label}
             </button>
           ))}
           <a
             href="/admin/monetization"
-            className="mb-1 mt-2 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-left text-sm font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12"
+            className="col-span-2 mt-1 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-center text-xs font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12 lg:mb-1 lg:mt-2 lg:text-left lg:text-sm"
           >
             Monetisation & memberships
           </a>
-          <div className="mt-4 rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/55">
+          <div className="col-span-2 mt-4 hidden rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/55 lg:block">
             Admins cannot browse unrelated private conversations. Only evidence intentionally submitted in a safety report is shown here.
           </div>
         </aside>
@@ -223,12 +258,12 @@ export function AdminDashboard({
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-black tracking-[0.28em] text-[#F2C94C]">AFROLOVE CONTROL CENTRE</p>
-                  <h1 className="mt-2 text-4xl font-black">Platform overview</h1>
+                  <h1 className="mt-2 text-3xl font-black sm:text-4xl">Platform overview</h1>
                   <p className="mt-2 text-sm text-white/40">Live safety, membership and community health indicators.</p>
                 </div>
                 <button onClick={() => void run(refresh, "Dashboard refreshed")} disabled={busy} className="rounded-2xl border border-white/10 px-4 py-3 text-xs font-black text-white/60 disabled:opacity-40">Refresh data</button>
               </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
                 <Metric label="Members" value={data.metrics.members} hint={`${data.metrics.activeMembers} available or under light moderation`} />
                 <Metric label="Open reports" value={data.metrics.openReports} hint={`${data.metrics.urgentReports} urgent safety cases`} />
                 <Metric label="Active matches" value={data.metrics.activeMatches} hint={`${data.metrics.messages} saved chat messages`} />

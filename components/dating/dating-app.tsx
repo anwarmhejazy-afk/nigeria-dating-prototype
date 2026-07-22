@@ -1098,7 +1098,7 @@ function HomeScreen({
       />
 
       {showcaseMode && (
-        <div className="mt-5 rounded-2xl border border-blue-400/20 bg-blue-400/[0.07] p-3.5">
+        <div className="mt-4 rounded-2xl border border-blue-400/20 bg-blue-400/[0.07] p-3">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-400/10 text-blue-300">
               <DatingIcon name="shield" className="h-4 w-4" />
@@ -1113,7 +1113,7 @@ function HomeScreen({
         </div>
       )}
 
-      <div className="relative mt-5">
+      <div className="relative mt-4">
         <DatingIcon
           name="search"
           className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30"
@@ -1144,20 +1144,20 @@ function HomeScreen({
           </button>
         </div>
 
-        <div className="app-scroll mt-3 flex gap-3 overflow-x-auto pb-1">
+        <div data-testid="mobile-home-profile-strip" className="app-scroll mt-3 flex snap-x snap-mandatory gap-3.5 overflow-x-auto pb-2 pr-8">
           {candidates.slice(0, 5).map((profile) => (
             <button
               key={profile.id}
               onClick={() => openDetails(profile)}
-              className="relative h-44 w-32 shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-[#171a21] text-left"
+              className="relative h-48 w-[142px] shrink-0 snap-start overflow-hidden rounded-[24px] border border-white/10 bg-[#171a21] text-left shadow-[0_16px_38px_rgba(0,0,0,0.3)]"
             >
-              <ProfilePhoto profile={profile} sizes="128px" />
+              <ProfilePhoto profile={profile} sizes="142px" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent" />
               {profile.boosted && <span className="absolute left-2 top-2 rounded-full bg-[#F2C94C] px-2 py-1 text-[8px] font-black text-black">BOOSTED</span>}
               {profile.membershipPlan === "vip" && !profile.boosted && <span className="absolute left-2 top-2 rounded-full border border-[#F2C94C]/50 bg-black/55 px-2 py-1 text-[8px] font-black text-[#FFE58C]">VIP</span>}
               <div className="absolute inset-x-3 bottom-3">
-                <p className="truncate text-sm font-black">{profileTitle(profile)}</p>
-                <p className="mt-0.5 truncate text-[10px] text-[#FFE58C]">
+                <p className="truncate text-[15px] font-black">{profileTitle(profile)}</p>
+                <p className="mt-0.5 truncate text-[11px] font-bold text-[#FFE58C]">
                   {profile.compatibility}% match
                 </p>
               </div>
@@ -1745,7 +1745,7 @@ function ProfileScreen({
             <p className="text-[10px] font-black tracking-[0.32em] text-[#F2C94C]">YOUR PROFILE</p>
             <p className="mt-1 text-xs text-white/45">{memberProfile.profile_completion}% complete</p>
           </div>
-          <button onClick={openSettings} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white/75 backdrop-blur-md" aria-label="Settings">
+          <button onClick={openSettings} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#F2C94C]/25 bg-black/55 text-[#FFE58C] shadow-lg backdrop-blur-md" aria-label="Settings">
             <DatingIcon name="settings" className="h-5 w-5" />
           </button>
         </div>
@@ -1803,6 +1803,43 @@ function ProfileScreen({
           </span>
           <DatingIcon name="chevron" className="h-4 w-4 text-[#F2C94C]" />
         </button>
+        <section
+          data-testid="mobile-account-controls"
+          className="mt-6 rounded-[22px] border border-white/[0.08] bg-white/[0.025] p-3"
+        >
+          <p className="px-1 pb-2 text-[9px] font-black uppercase tracking-[0.22em] text-white/30">
+            Account controls
+          </p>
+          <button
+            onClick={openSettings}
+            className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-white/[0.04]"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.06] text-[#FFE58C]">
+              <DatingIcon name="settings" className="h-4 w-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black">Account settings</span>
+              <span className="mt-0.5 block text-[10px] text-white/38">Privacy, notifications and safety</span>
+            </span>
+            <DatingIcon name="chevron" className="h-4 w-4 text-white/25" />
+          </button>
+          <div className="my-1 h-px bg-white/[0.06]" />
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-red-300 transition hover:bg-red-400/[0.06]"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-400/[0.08]">
+                <DatingIcon name="back" className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-black">Sign out</span>
+                <span className="mt-0.5 block text-[10px] text-red-200/45">Securely leave this account</span>
+              </span>
+            </button>
+          </form>
+        </section>
+
       </div>
     </div>
   );
@@ -1829,7 +1866,7 @@ function BottomNav({
         const active = tab === item.id;
         const badge = item.id === "chat" ? unreadCount : item.id === "likes" ? likeCount : 0;
         return (
-          <button key={item.id} onClick={() => setTab(item.id)} className={`relative flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold transition ${active ? "text-[#F2C94C]" : "text-white/30"}`}>
+          <button key={item.id} onClick={() => setTab(item.id)} className={`relative flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold transition ${active ? "text-[#F2C94C]" : "text-white/48"}`}>
             {active && <span className="absolute -top-2 h-0.5 w-8 rounded-full bg-[#F2C94C] shadow-[0_0_12px_rgba(242,201,76,.7)]" />}
             <span className="relative"><DatingIcon name={item.icon} className="h-5 w-5" />{badge > 0 && <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F2C94C] px-1 text-[8px] font-black text-black">{Math.min(badge, 9)}</span>}</span>
             {item.label}

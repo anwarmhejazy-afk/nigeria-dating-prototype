@@ -143,15 +143,22 @@ export function MembershipDashboard({
 
   return (
     <main className="min-h-screen bg-[#07080b] text-white">
-      <header className="border-b border-white/[0.08] bg-[#090b10]/95">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <BrandLogo size="sm" />
-          <div className="flex flex-wrap items-center justify-end gap-2">
+      <header
+        data-testid="billing-responsive-header"
+        className="border-b border-white/[0.08] bg-[#090b10]/95"
+      >
+        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-3 py-3 sm:flex sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
+          <BrandLogo
+            size="sm"
+            className="min-w-0 max-w-[150px] sm:max-w-none"
+          />
+
+          <div className="contents sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
             <div
               data-testid="billing-member-identity"
-              className="flex max-w-[240px] items-center gap-2 rounded-full border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] py-1.5 pl-1.5 pr-3"
+              className="col-span-3 row-start-2 flex w-full min-w-0 items-center gap-2 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] py-1.5 pl-1.5 pr-3 sm:order-1 sm:w-auto sm:max-w-[240px] sm:rounded-full"
             >
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.06]">
+              <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.06] sm:h-9 sm:w-9">
                 {member.avatarUrl ? (
                   <Image
                     src={member.avatarUrl}
@@ -161,7 +168,7 @@ export function MembershipDashboard({
                     className="object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs font-black text-[#FFE58C]">
+                  <div className="flex h-full w-full items-center justify-center text-[10px] font-black text-[#FFE58C] sm:text-xs">
                     {member.displayName
                       .split(" ")
                       .map((part) => part[0])
@@ -173,17 +180,29 @@ export function MembershipDashboard({
               </div>
 
               <div className="min-w-0">
-                <p className="truncate text-xs font-black text-white">
+                <p className="truncate text-[11px] font-black text-white sm:text-xs">
                   {member.displayName}
                 </p>
-                <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#F2C94C]">
+                <p className="mt-0.5 truncate text-[8px] font-black uppercase tracking-[0.1em] text-[#F2C94C] sm:text-[9px] sm:tracking-[0.12em]">
                   {snapshot.planName} member
                 </p>
               </div>
             </div>
 
-            <a href="/app" className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/60">Back to app</a>
-            <a href="/billing" className="rounded-full bg-[#F2C94C] px-4 py-2 text-xs font-black text-black">Billing</a>
+            <a
+              href="/app"
+              className="col-start-2 row-start-1 flex items-center justify-center rounded-full border border-white/10 px-3 py-2 text-[10px] font-black text-white/60 sm:order-2 sm:px-4 sm:text-xs"
+            >
+              <span className="sm:hidden">App</span>
+              <span className="hidden sm:inline">Back to app</span>
+            </a>
+
+            <a
+              href="/billing"
+              className="col-start-3 row-start-1 flex items-center justify-center rounded-full bg-[#F2C94C] px-3 py-2 text-[10px] font-black text-black sm:order-3 sm:px-4 sm:text-xs"
+            >
+              Billing
+            </a>
           </div>
         </div>
       </header>
