@@ -468,3 +468,93 @@ body {
   }
 }
 /* AFROLOVE CLEARER MOBILE SLIDESHOW V2 END */
+
+/* AFROLOVE FINAL MOBILE EXPERIENCE START */
+@media (max-width: 639px) {
+  .afrolove-hero-slideshow {
+    opacity: 1 !important;
+  }
+
+  .afrolove-hero-slideshow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        circle at 62% 30%,
+        rgba(255, 226, 202, 0.18) 0%,
+        rgba(255, 226, 202, 0.07) 22%,
+        transparent 46%
+      );
+    mix-blend-mode: screen;
+    z-index: 2;
+  }
+
+  .afrolove-hero-photo {
+    background-position: 50% 12% !important;
+    filter: saturate(1.01) contrast(1.04) brightness(0.88) !important;
+    transform: scale(1.025);
+  }
+
+  .afrolove-hero-overlay-horizontal {
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(5, 7, 11, 0.84) 0%,
+        rgba(5, 7, 11, 0.72) 38%,
+        rgba(5, 7, 11, 0.38) 64%,
+        rgba(5, 7, 11, 0.28) 100%
+      ) !important;
+  }
+
+  .afrolove-hero-overlay-vertical {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(7, 9, 13, 0.08) 0%,
+        rgba(7, 9, 13, 0.03) 48%,
+        rgba(7, 9, 13, 0.46) 100%
+      ) !important;
+  }
+
+  .afrolove-hero-copy-panel {
+    background-color: rgba(5, 7, 11, 0.24) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(1.5px);
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+  }
+
+  .afrolove-hero-copy-panel h1 {
+    max-width: 21rem;
+    font-size: clamp(2.45rem, 11.5vw, 2.9rem) !important;
+    line-height: 0.94 !important;
+    letter-spacing: -0.045em !important;
+    text-wrap: balance;
+    text-shadow: 0 4px 28px rgba(0, 0, 0, 0.78);
+  }
+
+  .afrolove-hero-copy-panel > p {
+    color: rgba(255, 255, 255, 0.72) !important;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.72);
+  }
+
+  .afrolove-hero-copy-panel > div:last-child > div {
+    background-color: rgba(8, 10, 15, 0.48) !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    backdrop-filter: blur(3px);
+  }
+
+  .afrolove-hero-copy-panel > div:last-child > div p:last-child {
+    color: rgba(255, 255, 255, 0.58) !important;
+  }
+
+  [data-testid="landing-footer"] {
+    row-gap: 0.85rem;
+  }
+
+  [data-testid="landing-footer"] a {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+}
+/* AFROLOVE FINAL MOBILE EXPERIENCE END */
