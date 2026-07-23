@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { formatMoney } from "@/lib/membership";
 
@@ -52,12 +53,19 @@ export function MonetizationDashboard({
   flutterwaveConfigured: boolean;
   currentAdminName: string;
 }) {
+  const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
   const [memberId, setMemberId] = useState(members[0]?.id || "");
   const [plan, setPlan] = useState("premium");
   const [days, setDays] = useState(30);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [visibleSubscriptions, setVisibleSubscriptions] =
+    useState(subscriptions);
+
+  useEffect(() => {
+    setVisibleSubscriptions(subscriptions);
+  }, [subscriptions]);
 
   const memberMap = useMemo(
     () => new Map(members.map((member) => [member.id, member])),
@@ -70,7 +78,7 @@ export function MonetizationDashboard({
         .reduce((sum, item) => sum + item.amount_minor, 0),
     [transactions],
   );
-  const activeSubscriptions = subscriptions.filter((item) =>
+  const activeSubscriptions = visibleSubscriptions.filter((item) =>
     ["active", "trialing"].includes(item.status),
   );
 
@@ -107,20 +115,61 @@ export function MonetizationDashboard({
   const grant = async () => {
     setBusy(true);
     setMessage("");
-    const response = await fetch("/api/admin/monetization/grant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: memberId, plan, days }),
-    });
-    const payload = await response.json();
-    setMessage(
-      response.ok
-        ? plan === "free"
-          ? "Membership removed. The member is now on the Free plan. Refresh to update totals."
-          : `${plan.toUpperCase()} test access granted. Refresh to update totals.`
-        : payload.error || "Unable to update membership.",
-    );
-    setBusy(false);
+
+    try {
+      const response = await fetch(
+        "/api/admin/monetization/grant",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: memberId,
+            plan,
+            days,
+          }),
+        },
+      );
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setMessage(
+          payload.error ||
+            "Unable to update membership.",
+        );
+        return;
+      }
+
+      if (plan === "free") {
+        setVisibleSubscriptions((items) =>
+          items.filter(
+            (item) => item.user_id !== memberId,
+          ),
+        );
+
+        setMessage(
+          "Membership revoked. The member is now on the Free plan.",
+        );
+      } else {
+        setMessage(
+          `${plan.toUpperCase()} test access granted successfully.`,
+        );
+      }
+
+      /*
+       * Update the server-rendered props after the immediate
+       * client-side change. No manual browser refresh is needed.
+       */
+      router.refresh();
+    } catch {
+      setMessage(
+        "Unable to update membership. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   const inputClass =
@@ -193,7 +242,7 @@ export function MonetizationDashboard({
               <Field label="Plan"><select className={inputClass} value={plan} onChange={(event) => setPlan(event.target.value)}><option value="premium">Premium</option><option value="vip">VIP</option><option value="free">Free — revoke membership</option></select></Field>
               {plan !== "free" && <Field label="Number of days"><input type="number" min="1" max="365" className={inputClass} value={days} onChange={(event) => setDays(Number(event.target.value))} /></Field>}
             </div>
-            <button disabled={busy || !memberId} onClick={() => void grant()} className={`mt-5 w-full rounded-2xl py-3 text-sm font-black disabled:opacity-50 ${plan === "free" ? "border border-red-400/30 bg-red-400/10 text-red-200" : "bg-[#F2C94C] text-black"}`}>{plan === "free" ? "Revoke to Free" : "Grant test access"}</button>
+            <button disabled={busy || !memberId} onClick={() => void grant()} className={`mt-5 w-full rounded-2xl py-3 text-sm font-black disabled:opacity-50 ${plan === "free" ? "border border-red-400/30 bg-red-400/10 text-red-200" : "bg-[#F2C94C] text-black"}`}>{busy ? "Updating membership..." : plan === "free" ? "Revoke to Free" : "Grant test access"}</button>
             <div className="mt-5 rounded-2xl border border-white/[0.07] bg-black/20 p-4 text-xs leading-5 text-white/35"><strong className="text-white/65">Current default:</strong> Premium ₦3,500/month, VIP ₦7,500/month, split ratio 1:1.</div>
           </section>
         </div>
