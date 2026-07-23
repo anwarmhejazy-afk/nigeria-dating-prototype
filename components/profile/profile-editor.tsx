@@ -96,6 +96,55 @@ function initialForm(profile: MemberProfile | null): FormState {
   };
 }
 
+function profileSaveErrorMessage(
+  caught: unknown,
+) {
+  if (caught instanceof Error) {
+    return caught.message;
+  }
+
+  if (
+    caught &&
+    typeof caught === "object"
+  ) {
+    const record =
+      caught as Record<string, unknown>;
+
+    const message =
+      typeof record.message === "string"
+        ? record.message.trim()
+        : "";
+
+    const details =
+      typeof record.details === "string"
+        ? record.details.trim()
+        : "";
+
+    const hint =
+      typeof record.hint === "string"
+        ? record.hint.trim()
+        : "";
+
+    const code =
+      typeof record.code === "string"
+        ? record.code.trim()
+        : "";
+
+    const parts = [
+      message,
+      details,
+      hint,
+      code ? `Error code: ${code}` : "",
+    ].filter(Boolean);
+
+    if (parts.length) {
+      return parts.join(" ");
+    }
+  }
+
+  return "Unable to save your profile. Please sign in again and retry.";
+}
+
 function Icon({ name }: { name: "back" | "camera" | "check" | "close" | "sparkle" | "upload" }) {
   const paths = {
     back: <><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></>,
@@ -321,29 +370,88 @@ export function ProfileEditor({
         last_seen: new Date().toISOString(),
       };
 
-      const { error: profileError } = await supabase
+      /*
+       * Confirm that the browser still has a valid member session
+       * before attempting an RLS-protected profile update.
+       */
+      const {
+        data: authenticated,
+        error: authenticationError,
+      } = await supabase.auth.getUser();
+
+      if (
+        authenticationError ||
+        !authenticated.user
+      ) {
+        throw new Error(
+          "Your session has expired. Sign in again, then publish your profile.",
+        );
+      }
+
+      if (authenticated.user.id !== userId) {
+        throw new Error(
+          "The signed-in account does not match this profile. Sign out and sign in again.",
+        );
+      }
+
+      const {
+        data: savedProfile,
+        error: profileError,
+      } = await supabase
         .from("profiles")
-        .upsert(payload, { onConflict: "id" });
+        .upsert(payload, {
+          onConflict: "id",
+        })
+        .select("id,onboarding_completed")
+        .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        throw profileError;
+      }
 
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          full_name: payload.display_name,
-          avatar_url: payload.avatar_url,
-        },
-      });
+      if (!savedProfile?.id) {
+        throw new Error(
+          "The profile was not returned after saving. Please retry.",
+        );
+      }
 
-      if (metadataError) throw metadataError;
+      /*
+       * Authentication metadata is helpful for headers and emails,
+       * but it is not the dating profile itself. A metadata failure
+       * must not undo or block a profile that Supabase saved.
+       */
+      const { error: metadataError } =
+        await supabase.auth.updateUser({
+          data: {
+            full_name: payload.display_name,
+            avatar_url: payload.avatar_url,
+          },
+        });
+
+      if (metadataError) {
+        console.warn(
+          "AfroLove profile metadata update warning:",
+          metadataError,
+        );
+      }
 
       if (complete) {
         router.replace("/app");
         router.refresh();
       } else {
-        setSuccess("Draft saved securely. You can finish your profile now.");
+        setSuccess(
+          "Draft saved securely. You can finish your profile now.",
+        );
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to save your profile.");
+      console.error(
+        "AfroLove profile save failed:",
+        caught,
+      );
+
+      setError(
+        profileSaveErrorMessage(caught),
+      );
     } finally {
       setSaving(false);
     }
