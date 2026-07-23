@@ -136,6 +136,7 @@ export async function loadAdminDashboard(
     verificationResult,
     auditResult,
     metricsResult,
+    adminMembersResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -169,12 +170,39 @@ export async function loadAdminDashboard(
       .order("created_at", { ascending: false })
       .limit(150),
     supabase.rpc("admin_platform_metrics"),
+    supabase
+      .from("admin_members")
+      .select("user_id")
+      .eq("is_active", true),
   ]);
 
-  const profiles = ((profilesResult.data || []) as Row[])
+  /*
+   * Keep every profile available for audit-log and report names,
+   * but expose only genuine dating members in Member management.
+   */
+  const allProfiles = ((profilesResult.data || []) as Row[])
     .map((row) => toAdminProfile(row))
-    .filter((profile): profile is AdminProfile => Boolean(profile));
-  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+    .filter(
+      (profile): profile is AdminProfile =>
+        Boolean(profile),
+    );
+
+  const activeStaffIds = new Set(
+    ((adminMembersResult.data || []) as Row[])
+      .map((row) => text(row.user_id))
+      .filter(Boolean),
+  );
+
+  const profiles = allProfiles.filter(
+    (profile) => !activeStaffIds.has(profile.id),
+  );
+
+  const profileMap = new Map(
+    allProfiles.map((profile) => [
+      profile.id,
+      profile,
+    ]),
+  );
 
   const evidenceMap = new Map<string, ReportEvidenceItem[]>();
   for (const row of (evidenceResult.data || []) as Row[]) {
