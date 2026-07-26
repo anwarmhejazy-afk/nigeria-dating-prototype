@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent, TouchEvent as ReactTouchEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { DatingIcon, type DatingIconName } from "@/components/dating/icons";
@@ -1917,35 +1917,371 @@ function FiltersOverlay({
 }
 
 function DetailsOverlay({ profile, close, like, openSafety }: { profile: DiscoveryProfile; close: () => void; like: () => void; openSafety: () => void }) {
+  // AFROLOVE_PROFILE_GALLERY_NAVIGATION
   const [photoIndex, setPhotoIndex] = useState(0);
-  const photos = profile.photos.length ? profile.photos : profile.avatarUrl ? [profile.avatarUrl] : [];
-  const photoProfile = photos.length ? { ...profile, photos: [photos[photoIndex]] } : profile;
+  const touchStartX = useRef<number | null>(null);
+  const suppressTap = useRef(false);
+
+  const photos = profile.photos.length
+    ? profile.photos
+    : profile.avatarUrl
+      ? [profile.avatarUrl]
+      : [];
+
+  const hasMultiplePhotos = photos.length > 1;
+
+  useEffect(() => {
+    setPhotoIndex(0);
+  }, [profile.id]);
+
+  const showPreviousPhoto = () => {
+    if (!hasMultiplePhotos) return;
+
+    setPhotoIndex((current) =>
+      (current - 1 + photos.length) % photos.length,
+    );
+  };
+
+  const showNextPhoto = () => {
+    if (!hasMultiplePhotos) return;
+
+    setPhotoIndex((current) =>
+      (current + 1) % photos.length,
+    );
+  };
+
+  const handleTouchStart = (
+    event: ReactTouchEvent<HTMLDivElement>,
+  ) => {
+    touchStartX.current =
+      event.touches[0]?.clientX ?? null;
+    suppressTap.current = false;
+  };
+
+  const handleTouchEnd = (
+    event: ReactTouchEvent<HTMLDivElement>,
+  ) => {
+    const startX = touchStartX.current;
+    const endX =
+      event.changedTouches[0]?.clientX ?? null;
+
+    touchStartX.current = null;
+
+    if (
+      startX === null ||
+      endX === null ||
+      !hasMultiplePhotos
+    ) {
+      return;
+    }
+
+    const movement = endX - startX;
+
+    if (Math.abs(movement) < 44) {
+      return;
+    }
+
+    suppressTap.current = true;
+
+    if (movement > 0) {
+      showPreviousPhoto();
+    } else {
+      showNextPhoto();
+    }
+  };
+
+  const handleTapNavigation = (
+    direction: "previous" | "next",
+  ) => {
+    if (suppressTap.current) {
+      suppressTap.current = false;
+      return;
+    }
+
+    if (direction === "previous") {
+      showPreviousPhoto();
+    } else {
+      showNextPhoto();
+    }
+  };
+
+  const activePhoto =
+    photos[photoIndex] || photos[0] || null;
+
+  const photoProfile = activePhoto
+    ? { ...profile, photos: [activePhoto] }
+    : profile;
 
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto pb-28">
-        <div className="relative h-[480px] overflow-hidden">
-          <ProfilePhoto profile={photoProfile} priority />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d12] via-transparent to-black/35" />
-          {photos.length > 1 && <div className="absolute inset-x-4 top-4 flex gap-1.5 pr-14">{photos.map((_, index) => <button key={index} onClick={() => setPhotoIndex(index)} className={`h-1 flex-1 rounded-full ${index === photoIndex ? "bg-white" : "bg-white/25"}`} aria-label={`View photo ${index + 1}`} />)}</div>}
-          <div className="absolute inset-x-5 bottom-5">
-            <div className="flex items-center gap-2"><h1 className="text-3xl font-black">{profileTitle(profile)}</h1>{profile.verified && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-400"><DatingIcon name="check" className="h-3 w-3" /></span>}</div>
-            <p className="mt-1 text-sm font-bold text-[#FFE58C]">{profile.occupation} · {profile.city}</p>
+        <div
+          className="relative h-[480px] touch-pan-y select-none overflow-hidden focus:outline-none"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={() => {
+            touchStartX.current = null;
+            suppressTap.current = false;
+          }}
+          onKeyDown={(event) => {
+            if (!hasMultiplePhotos) return;
+
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              showPreviousPhoto();
+            }
+
+            if (event.key === "ArrowRight") {
+              event.preventDefault();
+              showNextPhoto();
+            }
+          }}
+          tabIndex={hasMultiplePhotos ? 0 : -1}
+          role={hasMultiplePhotos ? "region" : undefined}
+          aria-roledescription={
+            hasMultiplePhotos ? "profile photo carousel" : undefined
+          }
+          aria-label={
+            hasMultiplePhotos
+              ? profile.displayName +
+                " photo " +
+                (photoIndex + 1) +
+                " of " +
+                photos.length
+              : undefined
+          }
+        >
+          <div
+            key={activePhoto || profile.id}
+            className="absolute inset-0"
+          >
+            <ProfilePhoto
+              profile={photoProfile}
+              priority
+            />
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b0d12] via-transparent to-black/35" />
+
+          {hasMultiplePhotos && (
+            <>
+              <div className="absolute inset-x-4 top-4 z-30 flex gap-1.5 pr-14">
+                {photos.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() =>
+                      setPhotoIndex(index)
+                    }
+                    className={[
+                      "h-1 flex-1 rounded-full transition-all duration-200",
+                      index === photoIndex
+                        ? "bg-white shadow-[0_0_8px_rgba(255,255,255,.45)]"
+                        : "bg-white/25 hover:bg-white/45",
+                    ].join(" ")}
+                    aria-label={
+                      "View photo " + (index + 1)
+                    }
+                    aria-current={
+                      index === photoIndex
+                        ? "true"
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleTapNavigation("previous")
+                }
+                className="absolute inset-y-16 left-0 z-10 w-1/2 cursor-w-resize bg-transparent"
+                aria-label="Previous profile photo"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleTapNavigation("next")
+                }
+                className="absolute inset-y-16 right-0 z-10 w-1/2 cursor-e-resize bg-transparent"
+                aria-label="Next profile photo"
+              />
+
+              <button
+                type="button"
+                onClick={showPreviousPhoto}
+                className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/85 shadow-xl backdrop-blur-md transition hover:scale-105 hover:bg-black/65 active:scale-95"
+                aria-label="Previous profile photo"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={showNextPhoto}
+                className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/85 shadow-xl backdrop-blur-md transition hover:scale-105 hover:bg-black/65 active:scale-95"
+                aria-label="Next profile photo"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+
+              <div
+                className="pointer-events-none absolute bottom-24 right-5 z-30 rounded-full border border-white/10 bg-black/45 px-2.5 py-1 text-[10px] font-black text-white/80 backdrop-blur-md"
+                aria-hidden="true"
+              >
+                {photoIndex + 1} / {photos.length}
+              </div>
+            </>
+          )}
+
+          <div className="pointer-events-none absolute inset-x-5 bottom-5 z-20">
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-black">
+                {profileTitle(profile)}
+              </h1>
+
+              {profile.verified && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-400">
+                  <DatingIcon
+                    name="check"
+                    className="h-3 w-3"
+                  />
+                </span>
+              )}
+            </div>
+
+            <p className="mt-1 text-sm font-bold text-[#FFE58C]">
+              {profile.occupation} · {profile.city}
+            </p>
           </div>
         </div>
 
         <div className="space-y-6 px-5">
-          <div className="grid grid-cols-3 gap-2"><ProfileStat label="Match" value={`${profile.compatibility}%`} /><ProfileStat label="Height" value={profile.height} /><ProfileStat label="Tribe" value={profile.tribe} /></div>
-          <DetailSection title="About me"><p className="text-sm leading-6 text-white/68">{profile.bio}</p></DetailSection>
-          <DetailSection title="Looking for"><p className="text-sm leading-6 text-white/68">{profile.lookingFor}</p><p className="mt-2 text-xs font-bold text-[#FFE58C]">{profile.relationshipGoal}</p></DetailSection>
-          <DetailSection title="Interests"><div className="flex flex-wrap gap-2">{profile.interests.map((interest) => <span key={interest} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold">{interest}</span>)}</div></DetailSection>
-          <DetailSection title="Profile details"><div className="grid grid-cols-2 gap-2"><InfoTile label="Education" value={profile.education} /><InfoTile label="Religion" value={profile.religion} /><InfoTile label="Languages" value={profile.languages.join(", ") || "Not specified"} /><InfoTile label="Lifestyle" value={profile.lifestyle || "Not specified"} /></div></DetailSection>
-          <button onClick={openSafety} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 py-3 text-xs font-bold text-white/35"><DatingIcon name="shield" className="h-4 w-4" />Safety and reporting</button>
+          <div className="grid grid-cols-3 gap-2">
+            <ProfileStat
+              label="Match"
+              value={profile.compatibility + "%"}
+            />
+            <ProfileStat
+              label="Height"
+              value={profile.height}
+            />
+            <ProfileStat
+              label="Tribe"
+              value={profile.tribe}
+            />
+          </div>
+
+          <DetailSection title="About me">
+            <p className="text-sm leading-6 text-white/68">
+              {profile.bio}
+            </p>
+          </DetailSection>
+
+          <DetailSection title="Looking for">
+            <p className="text-sm leading-6 text-white/68">
+              {profile.lookingFor}
+            </p>
+            <p className="mt-2 text-xs font-bold text-[#FFE58C]">
+              {profile.relationshipGoal}
+            </p>
+          </DetailSection>
+
+          <DetailSection title="Interests">
+            <div className="flex flex-wrap gap-2">
+              {profile.interests.map((interest) => (
+                <span
+                  key={interest}
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          </DetailSection>
+
+          <DetailSection title="Profile details">
+            <div className="grid grid-cols-2 gap-2">
+              <InfoTile
+                label="Education"
+                value={profile.education}
+              />
+              <InfoTile
+                label="Religion"
+                value={profile.religion}
+              />
+              <InfoTile
+                label="Languages"
+                value={
+                  profile.languages.join(", ") ||
+                  "Not specified"
+                }
+              />
+              <InfoTile
+                label="Lifestyle"
+                value={
+                  profile.lifestyle ||
+                  "Not specified"
+                }
+              />
+            </div>
+          </DetailSection>
+
+          <button
+            onClick={openSafety}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 py-3 text-xs font-bold text-white/35"
+          >
+            <DatingIcon
+              name="shield"
+              className="h-4 w-4"
+            />
+            Safety and reporting
+          </button>
         </div>
       </div>
+
       <div className="absolute inset-x-0 bottom-0 flex gap-3 border-t border-white/[0.07] bg-[#0b0d12]/95 p-4 pb-[max(16px,env(safe-area-inset-bottom))] backdrop-blur-xl">
-        <button onClick={close} className="flex-1 rounded-2xl border border-white/10 py-3 text-sm font-black text-white/55">Not now</button>
-        <button onClick={like} className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black"><DatingIcon name="heart" className="h-4 w-4" />Like profile</button>
+        <button
+          onClick={close}
+          className="flex-1 rounded-2xl border border-white/10 py-3 text-sm font-black text-white/55"
+        >
+          Not now
+        </button>
+
+        <button
+          onClick={like}
+          className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black"
+        >
+          <DatingIcon
+            name="heart"
+            className="h-4 w-4"
+          />
+          Like profile
+        </button>
       </div>
     </OverlayShell>
   );
