@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
+  const db = supabase as any;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -20,14 +22,37 @@ export default async function OnboardingPage() {
     redirect("/admin");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile } = await db
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
 
   if (profile?.onboarding_completed) {
-    redirect("/app");
+    if (
+      ["suspended", "banned"].includes(
+        profile.account_status || "",
+      )
+    ) {
+      redirect("/account-status");
+    }
+
+    const verificationApproved =
+      Boolean(user.email_confirmed_at) &&
+      profile.age_verification_status ===
+        "confirmed" &&
+      profile.photo_verification_status ===
+        "approved" &&
+      ["not_required", "approved"].includes(
+        profile.id_verification_status || "",
+      ) &&
+      profile.verification_restricted === false;
+
+    redirect(
+      verificationApproved
+        ? "/app"
+        : "/verification",
+    );
   }
 
   return (
@@ -35,7 +60,11 @@ export default async function OnboardingPage() {
       mode="onboarding"
       userId={user.id}
       email={user.email ?? ""}
-      initialProfile={profile ? toMemberProfile(profile) : null}
+      initialProfile={
+        profile
+          ? toMemberProfile(profile)
+          : null
+      }
     />
   );
 }
