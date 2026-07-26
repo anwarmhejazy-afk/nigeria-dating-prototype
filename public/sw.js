@@ -1,4 +1,4 @@
-const CACHE_NAME = "afrolove-shell-v17";
+const CACHE_NAME = "afrolove-shell-v20";
 const OFFLINE_URL = "/offline";
 const APP_SHELL = [
   "/",

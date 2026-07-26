@@ -436,7 +436,12 @@ export function ProfileEditor({
       }
 
       if (complete) {
-        router.replace("/app");
+        // AFROLOVE_MANDATORY_VERIFICATION_REDIRECT
+        router.replace(
+          mode === "onboarding"
+            ? "/verification"
+            : "/app",
+        );
         router.refresh();
       } else {
         setSuccess(

@@ -12,28 +12,62 @@ export default async function ProtectedAppLayout({
   children: ReactNode;
 }) {
   const supabase = await createClient();
+  const db = supabase as any;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login?next=/app");
+  if (!user) {
+    redirect("/login?next=/app");
+  }
 
   if (await isAdmin(supabase)) {
     redirect("/admin");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile } = await db
     .from("profiles")
     .select(
-      "display_name,avatar_url,onboarding_completed,account_status",
+      [
+        "display_name",
+        "avatar_url",
+        "onboarding_completed",
+        "account_status",
+        "age_verification_status",
+        "photo_verification_status",
+        "id_verification_status",
+        "verification_restricted",
+      ].join(","),
     )
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile?.onboarding_completed) redirect("/onboarding");
+  if (!profile?.onboarding_completed) {
+    redirect("/onboarding");
+  }
 
-  if (["suspended", "banned"].includes(profile.account_status || "")) {
+  if (
+    ["suspended", "banned"].includes(
+      profile.account_status || "",
+    )
+  ) {
     redirect("/account-status");
+  }
+
+  const verificationApproved =
+    Boolean(user.email_confirmed_at) &&
+    profile.age_verification_status ===
+      "confirmed" &&
+    profile.photo_verification_status ===
+      "approved" &&
+    ["not_required", "approved"].includes(
+      profile.id_verification_status || "",
+    ) &&
+    profile.verification_restricted === false;
+
+  if (!verificationApproved) {
+    redirect("/verification");
   }
 
   return (
@@ -43,6 +77,7 @@ export default async function ProtectedAppLayout({
         name={profile.display_name}
         avatarUrl={profile.avatar_url}
       />
+
       {children}
     </>
   );

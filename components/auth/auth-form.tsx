@@ -11,6 +11,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const supabase = createClient();
   const [fullName, setFullName] = useState("");
+  // AFROLOVE_REGISTRATION_18_GATE
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [adultConfirmed, setAdultConfirmed] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,6 +51,37 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }
 
       if (mode === "register") {
+        if (!dateOfBirth) {
+          throw new Error("Enter your date of birth.");
+        }
+
+        const birthDate =
+          new Date(`${dateOfBirth}T00:00:00`);
+
+        const today = new Date();
+
+        const adultCutoff = new Date(
+          today.getFullYear() - 18,
+          today.getMonth(),
+          today.getDate(),
+        );
+
+        if (
+          Number.isNaN(birthDate.getTime()) ||
+          birthDate > adultCutoff
+        ) {
+          throw new Error(
+            "AfroLove is available only to adults aged 18 or older.",
+          );
+        }
+
+        if (!adultConfirmed) {
+          throw new Error(
+            "Confirm that you are at least 18 years old.",
+          );
+        }
+
+
         if (password.length < 8) {
           throw new Error("Use at least 8 characters for your password.");
         }
@@ -56,7 +90,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
           email: email.trim(),
           password,
           options: {
-            data: { full_name: fullName.trim() },
+            data: {
+              full_name: fullName.trim(),
+              date_of_birth: dateOfBirth,
+              adult_confirmation: true,
+            },
             emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
           },
         });
@@ -108,6 +146,47 @@ export function AuthForm({ mode }: { mode: Mode }) {
               className="w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3.5 text-sm outline-none transition placeholder:text-white/25 focus:border-[#F2C94C]/70 focus:ring-4 focus:ring-[#F2C94C]/10"
             />
           </label>
+        )}
+
+        {mode === "register" && (
+          <>
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold text-white/60">
+                Date of birth
+              </span>
+
+              <input
+                required
+                type="date"
+                value={dateOfBirth}
+                onChange={(event) =>
+                  setDateOfBirth(event.target.value)
+                }
+                autoComplete="bday"
+                className="w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3.5 text-sm outline-none transition focus:border-[#F2C94C]/70 focus:ring-4 focus:ring-[#F2C94C]/10"
+              />
+            </label>
+
+            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <input
+                required
+                type="checkbox"
+                checked={adultConfirmed}
+                onChange={(event) =>
+                  setAdultConfirmed(
+                    event.target.checked,
+                  )
+                }
+                className="mt-1 h-4 w-4 accent-[#F2C94C]"
+              />
+
+              <span className="text-xs leading-5 text-white/55">
+                I confirm that I am at least 18 years
+                old and that the date of birth entered
+                above is accurate.
+              </span>
+            </label>
+          </>
         )}
 
         <label className="block">
