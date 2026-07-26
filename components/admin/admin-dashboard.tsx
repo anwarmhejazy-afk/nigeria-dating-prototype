@@ -10,7 +10,7 @@ import type {
   VerificationRequest,
 } from "@/lib/admin";
 
-type Tab = "overview" | "reports" | "members" | "verification" | "audit";
+type Tab = "overview" | "reports" | "members" | "audit";
 
 type ApiResult = { error?: string; success?: boolean };
 
@@ -105,14 +105,63 @@ function Metric({ label, value, hint }: { label: string; value: number; hint: st
   );
 }
 
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  layered_verification_approve_photo:
+    "Photo approved",
+  layered_verification_require_id:
+    "Government ID required",
+  layered_verification_approve_id:
+    "Government ID approved",
+  layered_verification_reject:
+    "Verification rejected",
+  layered_verification_underage:
+    "Under 18 — account banned",
+  verification_reviewing:
+    "Verification review started",
+  verification_approved:
+    "Legacy verification approved",
+  verification_rejected:
+    "Legacy verification rejected",
+  verify:
+    "Legacy profile verification",
+  remove_verification:
+    "Legacy verification removed",
+  membership_test_granted:
+    "Test membership granted",
+};
+
+function auditActionLabel(
+  action: string,
+) {
+  const normalized = action
+    .trim()
+    .toLowerCase()
+    .replaceAll(" ", "_");
+
+  return (
+    AUDIT_ACTION_LABELS[normalized] ||
+    normalized
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase(),
+      )
+  );
+}
+
 export function AdminDashboard({
   initialData,
   currentAdminName,
+  ageVerificationCount,
 }: {
   initialData: AdminDashboardData;
   currentAdminName: string;
+  ageVerificationCount: number;
 }) {
   const [data, setData] = useState(initialData);
+  const [
+    layeredVerificationCount,
+    setLayeredVerificationCount,
+  ] = useState(ageVerificationCount);
   const [tab, setTab] = useState<Tab>("overview");
   const [query, setQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState<SafetyReport | null>(
@@ -122,12 +171,59 @@ export function AdminDashboard({
   const [toast, setToast] = useState("");
 
   const refresh = async () => {
-    const response = await fetch("/api/admin/dashboard", { cache: "no-store" });
-    const next = (await response.json()) as AdminDashboardData & { error?: string };
-    if (!response.ok) throw new Error(next.error || "Unable to refresh dashboard.");
+    const [
+      response,
+      verificationResponse,
+    ] = await Promise.all([
+      fetch("/api/admin/dashboard", {
+        cache: "no-store",
+      }),
+      fetch("/api/admin/age-verifications", {
+        cache: "no-store",
+      }),
+    ]);
+
+    const next =
+      (await response.json()) as
+        AdminDashboardData & {
+          error?: string;
+        };
+
+    const verificationResult =
+      (await verificationResponse.json()) as {
+        items?: unknown[];
+        error?: string;
+      };
+
+    if (!response.ok) {
+      throw new Error(
+        next.error ||
+          "Unable to refresh dashboard.",
+      );
+    }
+
+    if (!verificationResponse.ok) {
+      throw new Error(
+        verificationResult.error ||
+          "Unable to refresh Age & ID reviews.",
+      );
+    }
+
     setData(next);
+
+    setLayeredVerificationCount(
+      Array.isArray(verificationResult.items)
+        ? verificationResult.items.length
+        : 0,
+    );
+
     if (selectedReport) {
-      setSelectedReport(next.reports.find((report) => report.id === selectedReport.id) || null);
+      setSelectedReport(
+        next.reports.find(
+          (report) =>
+            report.id === selectedReport.id,
+        ) || null,
+      );
     }
   };
 
@@ -230,7 +326,6 @@ export function AdminDashboard({
             ["overview", "Overview"],
             ["reports", `Safety reports (${data.metrics.openReports})`],
             ["members", "Members"],
-            ["verification", `Verification (${data.metrics.pendingVerifications})`],
             ["audit", "Audit history"],
           ] as [Tab, string][]).map(([id, label]) => (
             <button
@@ -246,7 +341,7 @@ export function AdminDashboard({
             className="mb-1 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-left text-sm font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12"
           >
             <span className="block">
-              Age &amp; ID verification
+              Age &amp; ID verification ({layeredVerificationCount})
             </span>
             <span className="mt-1 block text-[10px] font-medium leading-4 text-white/45">
               Review selfies and government ID
@@ -278,7 +373,11 @@ export function AdminDashboard({
                 <Metric label="Members" value={data.metrics.members} hint={`${data.metrics.activeMembers} available or under light moderation`} />
                 <Metric label="Open reports" value={data.metrics.openReports} hint={`${data.metrics.urgentReports} urgent safety cases`} />
                 <Metric label="Active matches" value={data.metrics.activeMatches} hint={`${data.metrics.messages} saved chat messages`} />
-                <Metric label="Countries" value={data.metrics.countries} hint={`${data.metrics.pendingVerifications} verification requests waiting`} />
+                <Metric
+                  label="Age & ID reviews"
+                  value={layeredVerificationCount}
+                  hint={`${data.metrics.countries} countries represented`}
+                />
               </div>
               <div className="mt-6 grid gap-5 xl:grid-cols-2">
                 <div className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5">
@@ -302,7 +401,7 @@ export function AdminDashboard({
                   <div className="mt-4 space-y-3">
                     {data.audit.slice(0, 7).map((entry) => (
                       <div key={entry.id} className="rounded-2xl border border-white/[0.06] p-3">
-                        <p className="text-sm font-black">{entry.action.replaceAll("_", " ")}</p>
+                        <p className="text-sm font-black">{auditActionLabel(entry.action)}</p>
                         <p className="mt-1 text-[11px] text-white/35">{entry.adminName} · {entry.targetName} · {formatDate(entry.createdAt)}</p>
                       </div>
                     ))}
@@ -342,22 +441,11 @@ export function AdminDashboard({
               </div>
               <div className="mt-5 overflow-hidden rounded-3xl border border-white/[0.08]">
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] text-left">
-                    <thead className="bg-white/[0.04] text-[10px] uppercase tracking-wider text-white/35"><tr><th className="p-4">Member</th><th className="p-4">Location</th><th className="p-4">Status</th><th className="p-4">Verification</th><th className="p-4">Joined</th><th className="p-4">Actions</th></tr></thead>
+                  <table className="w-full min-w-[780px] text-left">
+                    <thead className="bg-white/[0.04] text-[10px] uppercase tracking-wider text-white/35"><tr><th className="p-4">Member</th><th className="p-4">Location</th><th className="p-4">Status</th><th className="p-4">Joined</th><th className="p-4">Actions</th></tr></thead>
                     <tbody>{filteredMembers.map((member) => <MemberRow key={member.id} member={member} busy={busy} run={run} />)}</tbody>
                   </table>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {tab === "verification" && (
-            <div>
-              <h1 className="text-3xl font-black">Verification requests</h1>
-              <p className="mt-1 text-sm text-white/35">Approve badges only after the configured identity review process is completed.</p>
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {data.verificationRequests.map((request) => <VerificationCard key={request.id} request={request} busy={busy} run={run} />)}
-                {!data.verificationRequests.length && <p className="rounded-3xl border border-dashed border-white/10 p-10 text-center text-white/35">No verification requests yet.</p>}
               </div>
             </div>
           )}
@@ -369,7 +457,7 @@ export function AdminDashboard({
               <div className="mt-5 space-y-2">
                 {data.audit.map((entry) => (
                   <div key={entry.id} className="grid gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 md:grid-cols-[180px_1fr_220px]">
-                    <p className="text-xs font-black text-[#FFE58C]">{entry.action.replaceAll("_", " ")}</p>
+                    <p className="text-xs font-black text-[#FFE58C]">{auditActionLabel(entry.action)}</p>
                     <p className="text-xs text-white/50">{entry.adminName} → {entry.targetName}</p>
                     <p className="text-xs text-white/30 md:text-right">{formatDate(entry.createdAt)}</p>
                   </div>
@@ -447,9 +535,9 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
       <td className="p-4"><div className="flex items-center gap-3"><Avatar member={member} /><div><p className="font-black">{member.displayName}</p><p className="mt-1 text-[10px] text-white/35">{member.email}</p></div></div></td>
       <td className="p-4 text-xs text-white/50">{member.city || "—"}, {member.country}</td>
       <td className="p-4"><StatusBadge value={member.accountStatus} /></td>
-      <td className="p-4 text-xs">{member.isVerified ? "✓ Verified" : "Not verified"}</td>
+      
       <td className="p-4 text-xs text-white/35">{formatDate(member.createdAt)}</td>
-      <td className="p-4"><div className="flex flex-wrap gap-1.5"><button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button><button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button><button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button><button disabled={busy} onClick={() => action("ban")} className="mini-action text-red-200">Ban</button><button disabled={busy} onClick={() => action("restore")} className="mini-action text-emerald-200">Restore</button><button disabled={busy} onClick={() => action(member.isVerified ? "remove_verification" : "verify")} className="mini-action">{member.isVerified ? "Unverify" : "Verify"}</button></div></td>
+      <td className="p-4"><div className="flex flex-wrap gap-1.5"><button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button><button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button><button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button><button disabled={busy} onClick={() => action("ban")} className="mini-action text-red-200">Ban</button><button disabled={busy} onClick={() => action("restore")} className="mini-action text-emerald-200">Restore</button></div></td>
     </tr>
   );
 }
