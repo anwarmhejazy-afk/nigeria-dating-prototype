@@ -312,7 +312,7 @@ export function AgeVerificationDashboard() {
                   <Action
                     label="Approve ID"
                     primary
-                    disabled={busy === item.id}
+                    disabled={busy === item.id || !item.idUrl}
                     onClick={() =>
                       void decide(
                         item,
