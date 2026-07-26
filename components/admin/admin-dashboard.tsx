@@ -242,6 +242,17 @@ export function AdminDashboard({
             </button>
           ))}
           <a
+            href="/admin/age-verification"
+            className="mb-1 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-left text-sm font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12"
+          >
+            <span className="block">
+              Age &amp; ID verification
+            </span>
+            <span className="mt-1 block text-[10px] font-medium leading-4 text-white/45">
+              Review selfies and government ID
+            </span>
+          </a>
+          <a
             href="/admin/monetization"
             className="col-span-2 mt-1 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-center text-xs font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12 lg:mb-1 lg:mt-2 lg:text-left lg:text-sm"
           >
