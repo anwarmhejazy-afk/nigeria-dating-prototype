@@ -370,13 +370,21 @@ export function AdminDashboard({
                 <button onClick={() => void run(refresh, "Dashboard refreshed")} disabled={busy} className="rounded-2xl border border-white/10 px-4 py-3 text-xs font-black text-white/60 disabled:opacity-40">Refresh data</button>
               </div>
               <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-                <Metric label="Members" value={data.metrics.members} hint={`${data.metrics.activeMembers} available or under light moderation`} />
+                <Metric
+                  label="Members"
+                  value={data.metrics.members}
+                  hint={`${data.metrics.activeMembers} available across ${data.metrics.countries} ${data.metrics.countries === 1 ? "country" : "countries"}`}
+                />
                 <Metric label="Open reports" value={data.metrics.openReports} hint={`${data.metrics.urgentReports} urgent safety cases`} />
                 <Metric label="Active matches" value={data.metrics.activeMatches} hint={`${data.metrics.messages} saved chat messages`} />
                 <Metric
                   label="Age & ID reviews"
                   value={layeredVerificationCount}
-                  hint={`${data.metrics.countries} countries represented`}
+                  hint={
+                    layeredVerificationCount === 0
+                      ? "No verification requests waiting"
+                      : `${layeredVerificationCount} verification ${layeredVerificationCount === 1 ? "request" : "requests"} waiting`
+                  }
                 />
               </div>
               <div className="mt-6 grid gap-5 xl:grid-cols-2">
