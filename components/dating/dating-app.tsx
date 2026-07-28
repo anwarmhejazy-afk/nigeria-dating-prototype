@@ -1703,12 +1703,120 @@ function ChatScreen({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-  const emojis = [
-    "😀", "😄", "😂", "😊", "😍", "🥰", "😘", "😉",
-    "😎", "🤗", "🤭", "🥹", "😇", "🙈", "❤️", "💕",
-    "💖", "💘", "💯", "🔥", "✨", "🎉", "👏", "👍",
-    "🙏", "💪", "🌹", "🌍", "✈️", "🍽️", "⚽", "🎵",
+  const emojiCategories = [
+    {
+      id: "love",
+      label: "Love",
+      icon: "❤️",
+      emojis: [
+        "❤️", "🩷", "🧡", "💛", "💚", "🩵", "💙", "💜",
+        "🤎", "🖤", "🤍", "💔", "❤️‍🔥", "❤️‍🩹", "💕", "💞",
+        "💓", "💗", "💖", "💘", "💝", "💟", "😍", "🥰",
+        "😘", "😻", "💋", "🌹", "💐", "💍", "👩‍❤️‍👨", "💌",
+      ],
+    },
+    {
+      id: "smileys",
+      label: "Smileys",
+      icon: "😀",
+      emojis: [
+        "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
+        "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
+        "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜",
+        "🤪", "🤨", "🧐", "🤓", "😎", "🥳", "🤩", "🥹",
+        "😏", "😒", "🙄", "😬", "🤭", "🤫", "🤔", "🫠",
+      ],
+    },
+    {
+      id: "gestures",
+      label: "Gestures",
+      icon: "👋",
+      emojis: [
+        "👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤌", "🤏",
+        "✌️", "🤞", "🫰", "🤟", "🤘", "🤙", "👈", "👉",
+        "👆", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛",
+        "🤜", "👏", "🙌", "🫶", "🤝", "🙏", "💪", "🫵",
+        "👋🏽", "👍🏽", "👏🏽", "🙏🏽", "🫶🏽", "💪🏽", "🤝🏽", "✌🏽",
+      ],
+    },
+    {
+      id: "activities",
+      label: "Fun",
+      icon: "🎉",
+      emojis: [
+        "🎉", "🎊", "🥳", "🎈", "🎂", "🎁", "🏆", "🥇",
+        "⚽", "🏀", "🏈", "🎾", "🏐", "🎱", "🏓", "🏸",
+        "🎮", "🎯", "🎲", "🎳", "🎨", "🎭", "🎤", "🎧",
+        "🎵", "🎶", "💃", "🕺", "🪩", "📸", "🎬", "✨",
+      ],
+    },
+    {
+      id: "food",
+      label: "Food",
+      icon: "🍕",
+      emojis: [
+        "🍕", "🍔", "🍟", "🌭", "🍿", "🥓", "🥞", "🧇",
+        "🍗", "🍖", "🌮", "🌯", "🥗", "🍝", "🍜", "🍲",
+        "🍛", "🍣", "🍤", "🍰", "🧁", "🍫", "🍩", "🍪",
+        "🍓", "🍉", "🍍", "🥭", "☕", "🧋", "🥤", "🍽️",
+      ],
+    },
+    {
+      id: "travel",
+      label: "Travel",
+      icon: "✈️",
+      emojis: [
+        "✈️", "🛫", "🛬", "🚗", "🚕", "🚌", "🚆", "🚢",
+        "🏝️", "🏖️", "🏕️", "🏞️", "🌍", "🌎", "🌏", "🗺️",
+        "🧳", "📍", "🏨", "🏡", "🌆", "🌃", "🌅", "🌄",
+        "🗽", "🗼", "🏰", "⛰️", "🌊", "☀️", "🌤️", "🌙",
+      ],
+    },
+    {
+      id: "nature",
+      label: "Nature",
+      icon: "🌹",
+      emojis: [
+        "🌹", "🌷", "🌸", "🌺", "🌻", "🌼", "💐", "🌱",
+        "🌿", "🍀", "🌴", "🌳", "🌵", "🍁", "🍂", "🪻",
+        "🐶", "🐱", "🦁", "🐯", "🐼", "🐨", "🦋", "🐝",
+        "🐬", "🐢", "🦚", "🦜", "🌈", "⭐", "🌟", "🔥",
+      ],
+    },
+    {
+      id: "objects",
+      label: "More",
+      icon: "🎵",
+      emojis: [
+        "💯", "✅", "❌", "❗", "❓", "⚡", "💡", "🔔",
+        "📱", "💻", "⌚", "📷", "🎥", "🎧", "🎤", "🎵",
+        "💎", "👑", "👜", "👠", "👔", "🕶️", "💄", "🪞",
+        "📚", "✏️", "📅", "💬", "🗨️", "🔐", "🛡️", "🚀",
+      ],
+    },
   ];
+  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState("love");
+  const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
+
+  const selectedEmojiList =
+    selectedEmojiCategory === "recent"
+      ? recentEmojis
+      : emojiCategories.find((category) => category.id === selectedEmojiCategory)?.emojis ?? emojiCategories[0].emojis;
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem("afrolove-recent-emojis") || "[]");
+      if (Array.isArray(stored)) {
+        setRecentEmojis(
+          stored
+            .filter((item): item is string => typeof item === "string")
+            .slice(0, 24),
+        );
+      }
+    } catch {
+      setRecentEmojis([]);
+    }
+  }, []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1764,7 +1872,15 @@ function ChatScreen({
     const end = field?.selectionEnd ?? start;
     const next = `${message.slice(0, start)}${emoji}${message.slice(end)}`;
     setMessage(next);
-    setEmojiOpen(false);
+    setRecentEmojis((current) => {
+      const updated = [emoji, ...current.filter((item) => item !== emoji)].slice(0, 24);
+      try {
+        window.localStorage.setItem("afrolove-recent-emojis", JSON.stringify(updated));
+      } catch {
+        // The picker still works when browser storage is unavailable.
+      }
+      return updated;
+    });
     window.requestAnimationFrame(() => {
       field?.focus();
       field?.setSelectionRange(start + emoji.length, start + emoji.length);
@@ -1845,15 +1961,51 @@ function ChatScreen({
           {emojiOpen && (
             <div ref={emojiPanelRef} className="absolute bottom-[76px] left-3 right-3 z-30 rounded-[24px] border border-white/10 bg-[#17191f]/98 p-3 shadow-2xl backdrop-blur-2xl">
               <div className="mb-2 flex items-center justify-between px-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#F2C94C]">Emojis</p>
-                <button onClick={() => setEmojiOpen(false)} className="text-xs text-white/35" aria-label="Close emojis">Close</button>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#F2C94C]">Emojis</p>
+                  <p className="mt-0.5 text-[9px] text-white/30">Choose several, then close when finished</p>
+                </div>
+                <button onClick={() => setEmojiOpen(false)} className="text-xs font-bold text-white/45" aria-label="Close emojis">Close</button>
               </div>
-              <div className="grid grid-cols-8 gap-1">
-                {emojis.map((emoji) => (
-                  <button key={emoji} onClick={() => insertEmoji(emoji)} className="flex h-9 items-center justify-center rounded-xl text-xl transition hover:bg-white/10" aria-label={`Insert ${emoji}`}>
-                    {emoji}
-                  </button>
-                ))}
+
+              <div className="app-scroll mb-2 flex gap-1 overflow-x-auto pb-1">
+                {[{ id: "recent", label: "Recent", icon: "🕘" }, ...emojiCategories].map((category) => {
+                  const active = selectedEmojiCategory === category.id;
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedEmojiCategory(category.id)}
+                      className={`flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-1.5 text-[10px] font-black transition ${active ? "bg-[#F2C94C] text-black" : "bg-white/[0.05] text-white/55 hover:bg-white/10"}`}
+                      aria-pressed={active}
+                      title={category.label}
+                    >
+                      <span>{category.icon}</span>
+                      <span>{category.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="app-scroll max-h-56 overflow-y-auto pr-1">
+                {selectedEmojiList.length ? (
+                  <div className="grid grid-cols-8 gap-1">
+                    {selectedEmojiList.map((emoji, index) => (
+                      <button
+                        key={`${selectedEmojiCategory}-${emoji}-${index}`}
+                        onClick={() => insertEmoji(emoji)}
+                        className="flex h-9 items-center justify-center rounded-xl text-xl transition hover:bg-white/10 active:scale-95"
+                        aria-label={`Insert ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-7 text-center">
+                    <p className="text-sm font-black text-white/60">No recent emojis yet</p>
+                    <p className="mt-1 text-[10px] text-white/30">Choose an emoji from another category and it will appear here.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
