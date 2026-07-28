@@ -1795,13 +1795,7 @@ function ChatScreen({
       ],
     },
   ];
-  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState("love");
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
-
-  const selectedEmojiList =
-    selectedEmojiCategory === "recent"
-      ? recentEmojis
-      : emojiCategories.find((category) => category.id === selectedEmojiCategory)?.emojis ?? emojiCategories[0].emojis;
 
   useEffect(() => {
     try {
@@ -1959,53 +1953,63 @@ function ChatScreen({
 
         <div className="relative border-t border-white/[0.07] bg-[#0d0f14]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
           {emojiOpen && (
-            <div ref={emojiPanelRef} className="absolute bottom-[76px] left-3 right-3 z-30 rounded-[24px] border border-white/10 bg-[#17191f]/98 p-3 shadow-2xl backdrop-blur-2xl">
-              <div className="mb-2 flex items-center justify-between px-1">
+            <div ref={emojiPanelRef} className="absolute bottom-[76px] left-3 right-3 z-30 overflow-hidden rounded-[24px] border border-white/10 bg-[#17191f]/98 shadow-2xl backdrop-blur-2xl">
+              <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#F2C94C]">Emojis</p>
-                  <p className="mt-0.5 text-[9px] text-white/30">Choose several, then close when finished</p>
+                  <p className="mt-0.5 text-[9px] text-white/30">Scroll through all emojis</p>
                 </div>
-                <button onClick={() => setEmojiOpen(false)} className="text-xs font-bold text-white/45" aria-label="Close emojis">Close</button>
+                <button
+                  onClick={() => setEmojiOpen(false)}
+                  className="rounded-xl px-2 py-1 text-xs font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70"
+                  aria-label="Close emojis"
+                >
+                  Close
+                </button>
               </div>
 
-              <div className="app-scroll mb-2 flex gap-1 overflow-x-auto pb-1">
-                {[{ id: "recent", label: "Recent", icon: "🕘" }, ...emojiCategories].map((category) => {
-                  const active = selectedEmojiCategory === category.id;
-                  return (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedEmojiCategory(category.id)}
-                      className={`flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-1.5 text-[10px] font-black transition ${active ? "bg-[#F2C94C] text-black" : "bg-white/[0.05] text-white/55 hover:bg-white/10"}`}
-                      aria-pressed={active}
-                      title={category.label}
-                    >
-                      <span>{category.icon}</span>
-                      <span>{category.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="app-scroll max-h-56 overflow-y-auto pr-1">
-                {selectedEmojiList.length ? (
-                  <div className="grid grid-cols-8 gap-1">
-                    {selectedEmojiList.map((emoji, index) => (
-                      <button
-                        key={`${selectedEmojiCategory}-${emoji}-${index}`}
-                        onClick={() => insertEmoji(emoji)}
-                        className="flex h-9 items-center justify-center rounded-xl text-xl transition hover:bg-white/10 active:scale-95"
-                        aria-label={`Insert ${emoji}`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-7 text-center">
-                    <p className="text-sm font-black text-white/60">No recent emojis yet</p>
-                    <p className="mt-1 text-[10px] text-white/30">Choose an emoji from another category and it will appear here.</p>
-                  </div>
+              <div className="app-scroll max-h-[42vh] overflow-y-auto px-3 pb-4">
+                {recentEmojis.length > 0 && (
+                  <section className="pt-3">
+                    <div className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-[#17191f]/95 px-1 py-2 backdrop-blur-xl">
+                      <span className="text-sm">🕘</span>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">Recently used</p>
+                    </div>
+                    <div className="grid grid-cols-8 gap-1">
+                      {recentEmojis.map((emoji, index) => (
+                        <button
+                          key={`recent-${emoji}-${index}`}
+                          onClick={() => insertEmoji(emoji)}
+                          className="flex h-10 items-center justify-center rounded-xl text-[22px] transition hover:bg-white/10 active:scale-95"
+                          aria-label={`Insert ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 )}
+
+                {emojiCategories.map((category) => (
+                  <section key={category.id} className="pt-3">
+                    <div className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-[#17191f]/95 px-1 py-2 backdrop-blur-xl">
+                      <span className="text-sm">{category.icon}</span>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">{category.label}</p>
+                    </div>
+                    <div className="grid grid-cols-8 gap-1">
+                      {category.emojis.map((emoji, index) => (
+                        <button
+                          key={`${category.id}-${emoji}-${index}`}
+                          onClick={() => insertEmoji(emoji)}
+                          className="flex h-10 items-center justify-center rounded-xl text-[22px] transition hover:bg-white/10 active:scale-95"
+                          aria-label={`Insert ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
               </div>
             </div>
           )}
