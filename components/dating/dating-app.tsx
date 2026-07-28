@@ -47,6 +47,7 @@ type ActivityNotification = {
   title: string;
   body: string;
   url: string;
+  seen_at: string | null;
   read_at: string | null;
   created_at: string;
 };
@@ -263,7 +264,7 @@ export function DatingApp({
     verifiedOnly: false,
   });
   const unreadCount = matches.reduce((total, match) => total + match.unreadCount, 0);
-  const activityUnreadCount = activityNotifications.filter((item) => !item.read_at).length;
+  const activityUnseenCount = activityNotifications.filter((item) => !item.seen_at).length;
   const selfProfile = useMemo(() => memberToDiscovery(memberProfile), [memberProfile]);
 
   const filteredCandidates = useMemo(() => {
@@ -405,7 +406,10 @@ export function DatingApp({
             senderId: row.sender_id,
             body: row.body,
             messageType: row.message_type,
-            mediaUrl: row.media_url,
+            mediaUrl:
+              row.message_type === "image" && row.media_url
+                ? `/api/matches/${row.match_id}/media/${row.id}`
+                : row.media_url,
             readAt: row.read_at,
             createdAt: row.created_at,
           };
@@ -420,7 +424,10 @@ export function DatingApp({
               match.id === activeMatch.id
                 ? {
                     ...match,
-                    lastMessage: incoming.body,
+                    lastMessage:
+                      incoming.messageType === "image"
+                        ? incoming.body || "📷 Photo"
+                        : incoming.body,
                     lastMessageAt: incoming.createdAt,
                     unreadCount: 0,
                   }
@@ -608,6 +615,41 @@ export function DatingApp({
     }
   };
 
+  const openNotificationsPanel = () => {
+    const now = new Date().toISOString();
+    setOverlay({ type: "notifications" });
+    setActivityNotifications((items) =>
+      items.map((item) => ({ ...item, seen_at: item.seen_at || now })),
+    );
+    void fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "seen" }),
+    }).catch(() => undefined);
+  };
+
+  const openActivityNotification = (notification: ActivityNotification) => {
+    const now = new Date().toISOString();
+    setActivityNotifications((items) =>
+      items.map((item) =>
+        item.id === notification.id
+          ? {
+              ...item,
+              seen_at: item.seen_at || now,
+              read_at: item.read_at || now,
+            }
+          : item,
+      ),
+    );
+    void fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "read", ids: [notification.id] }),
+    }).catch(() => undefined);
+    setOverlay(null);
+    router.push(notification.url);
+  };
+
   const openMatch = async (match: MatchSummary) => {
     setActiveMatch(match);
     setTab("chat");
@@ -708,6 +750,82 @@ export function DatingApp({
     } finally {
       setSendingMessage(false);
     }
+  };
+
+
+  const sendPhoto = (
+    file: File,
+    caption: string,
+    onProgress: (percent: number) => void,
+  ): Promise<boolean> => {
+    if (!activeMatch || sendingMessage) return Promise.resolve(false);
+
+    if (activeMatch.source === "showcase") {
+      showToast("Photo messages are available in real member conversations.");
+      return Promise.resolve(false);
+    }
+
+    setSendingMessage(true);
+
+    return new Promise((resolve) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("caption", caption.trim());
+
+      const request = new XMLHttpRequest();
+      request.open("POST", `/api/matches/${activeMatch.id}/messages`);
+      request.withCredentials = true;
+
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onProgress(Math.max(1, Math.min(100, Math.round((event.loaded / event.total) * 100))));
+        }
+      };
+
+      request.onerror = () => {
+        setSendingMessage(false);
+        showToast("Unable to upload the photo.");
+        resolve(false);
+      };
+
+      request.onload = () => {
+        setSendingMessage(false);
+        let payload: { message?: MatchMessage; error?: string } = {};
+        try {
+          payload = JSON.parse(request.responseText || "{}");
+        } catch {
+          payload = {};
+        }
+
+        if (request.status < 200 || request.status >= 300 || !payload.message) {
+          showToast(payload.error || "Unable to send the photo.");
+          resolve(false);
+          return;
+        }
+
+        const sent = payload.message;
+        setMessages((previous) =>
+          previous.some((item) => item.id === sent.id)
+            ? previous
+            : [...previous, sent],
+        );
+        setMatches((previous) =>
+          previous.map((match) =>
+            match.id === activeMatch.id
+              ? {
+                  ...match,
+                  lastMessage: sent.body || "📷 Photo",
+                  lastMessageAt: sent.createdAt,
+                }
+              : match,
+          ),
+        );
+        setMessage("");
+        resolve(true);
+      };
+
+      request.send(formData);
+    });
   };
 
   const unmatch = async (match: MatchSummary) => {
@@ -830,10 +948,10 @@ export function DatingApp({
               setTab={setTab}
               openDetails={(profile) => setOverlay({ type: "details", profile })}
               openMatch={openMatch}
-              openNotifications={() => setOverlay({ type: "notifications" })}
+              openNotifications={openNotificationsPanel}
               openPremium={() => setOverlay({ type: "premium" })}
               openFilters={() => membership.features.advanced_filters ? setOverlay({ type: "filters" }) : setOverlay({ type: "premium" })}
-              unreadCount={unreadCount + activityUnreadCount}
+              unreadCount={activityUnseenCount}
             />
           )}
 
@@ -888,6 +1006,7 @@ export function DatingApp({
                 setMessages([]);
               }}
               sendMessage={sendMessage}
+              sendPhoto={sendPhoto}
               unmatch={unmatch}
               openSafety={(profile, matchId) =>
                 setOverlay({ type: "safety", profile, matchId })
@@ -969,22 +1088,9 @@ export function DatingApp({
 
         {overlay?.type === "notifications" && (
           <NotificationsOverlay
-            likes={incomingLikeCount}
-            matches={matches}
             notifications={activityNotifications}
             close={() => setOverlay(null)}
-            openNotification={(url) => {
-              void fetch("/api/notifications", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
-              });
-              setActivityNotifications((items) =>
-                items.map((item) => ({ ...item, read_at: item.read_at || new Date().toISOString() })),
-              );
-              setOverlay(null);
-              router.push(url);
-            }}
+            openNotification={openActivityNotification}
           />
         )}
 
@@ -1088,9 +1194,9 @@ function HomeScreen({
             aria-label="Notifications"
           >
             <DatingIcon name="bell" />
-            {(incomingLikeCount + unreadCount) > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F2C94C] px-1 text-[8px] font-black text-black">
-                {Math.min(incomingLikeCount + unreadCount, 9)}
+                {Math.min(unreadCount, 9)}
               </span>
             )}
           </button>
@@ -1563,6 +1669,7 @@ function ChatScreen({
   openMatch,
   closeMatch,
   sendMessage,
+  sendPhoto,
   unmatch,
   openSafety,
   showToast,
@@ -1579,16 +1686,102 @@ function ChatScreen({
   openMatch: (match: MatchSummary) => void;
   closeMatch: () => void;
   sendMessage: () => void;
+  sendPhoto: (file: File, caption: string, onProgress: (percent: number) => void) => Promise<boolean>;
   unmatch: (match: MatchSummary) => void;
   openSafety: (profile: DiscoveryProfile, matchId: string) => void;
   showToast: (text: string) => void;
   canSeeReadReceipts: boolean;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPanelRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  const emojis = [
+    "😀", "😄", "😂", "😊", "😍", "🥰", "😘", "😉",
+    "😎", "🤗", "🤭", "🥹", "😇", "🙈", "❤️", "💕",
+    "💖", "💘", "💯", "🔥", "✨", "🎉", "👏", "👍",
+    "🙏", "💪", "🌹", "🌍", "✈️", "🍽️", "⚽", "🎵",
+  ];
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  useEffect(() => {
+    if (!emojiOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !emojiPanelRef.current?.contains(target) &&
+        !emojiButtonRef.current?.contains(target)
+      ) {
+        setEmojiOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [emojiOpen]);
+
+  const clearPhoto = () => {
+    if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setUploadProgress(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const choosePhoto = (file: File | undefined) => {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      showToast("Choose a JPG, PNG or WebP image.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("The image must be smaller than 8 MB.");
+      return;
+    }
+    clearPhoto();
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const field = textareaRef.current;
+    const start = field?.selectionStart ?? message.length;
+    const end = field?.selectionEnd ?? start;
+    const next = `${message.slice(0, start)}${emoji}${message.slice(end)}`;
+    setMessage(next);
+    setEmojiOpen(false);
+    window.requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  };
+
+  const submitComposer = async () => {
+    if (sendingMessage) return;
+    if (photoFile) {
+      setUploadProgress(1);
+      const sent = await sendPhoto(photoFile, message, setUploadProgress);
+      if (sent) clearPhoto();
+      else setUploadProgress(null);
+      return;
+    }
+    sendMessage();
+  };
 
   if (activeMatch) {
     return (
@@ -1622,11 +1815,19 @@ function ChatScreen({
             <div className="space-y-3">
               {messages.map((item) => {
                 const mine = item.senderId === memberId;
+                const imageMessage = item.messageType === "image" && item.mediaUrl;
                 return (
                   <div key={item.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-[20px] px-4 py-2.5 ${mine ? "rounded-br-md bg-[#F2C94C] text-black" : "rounded-bl-md bg-white/[0.07] text-white"}`}>
-                      <p className="whitespace-pre-wrap text-sm leading-5">{item.body}</p>
-                      <div className={`mt-1 flex items-center justify-end gap-1 text-[8px] ${mine ? "text-black/45" : "text-white/25"}`}>
+                    <div className={`max-w-[82%] overflow-hidden rounded-[20px] ${imageMessage ? "p-1.5" : "px-4 py-2.5"} ${mine ? "rounded-br-md bg-[#F2C94C] text-black" : "rounded-bl-md bg-white/[0.07] text-white"}`}>
+                      {imageMessage && (
+                        <button onClick={() => setLightboxUrl(item.mediaUrl)} className="block overflow-hidden rounded-[15px]" aria-label="Open photo">
+                          <Image src={item.mediaUrl!} alt="Chat photo" width={720} height={720} unoptimized className="max-h-80 w-full object-cover" />
+                        </button>
+                      )}
+                      {item.body && (
+                        <p className={`whitespace-pre-wrap text-sm leading-5 ${imageMessage ? "px-2 pb-1 pt-2" : ""}`}>{item.body}</p>
+                      )}
+                      <div className={`flex items-center justify-end gap-1 text-[8px] ${imageMessage ? "px-2 pb-1" : "mt-1"} ${mine ? "text-black/45" : "text-white/25"}`}>
                         {relativeTime(item.createdAt)}
                         {mine && <span>{canSeeReadReceipts && item.readAt ? "✓✓" : "✓"}</span>}
                       </div>
@@ -1634,20 +1835,55 @@ function ChatScreen({
                   </div>
                 );
               })}
-              {!messages.length && (
-                <p className="py-8 text-center text-xs text-white/30">Start the conversation with a thoughtful hello.</p>
-              )}
+              {!messages.length && <p className="py-8 text-center text-xs text-white/30">Start the conversation with a thoughtful hello.</p>}
               <div ref={endRef} />
             </div>
           )}
         </div>
 
-        <div className="border-t border-white/[0.07] bg-[#0d0f14]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
-          <div className="flex items-end gap-2">
-            <button onClick={() => showToast("Photo messages are coming in the media phase") } className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/38" aria-label="Attach photo">
+        <div className="relative border-t border-white/[0.07] bg-[#0d0f14]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
+          {emojiOpen && (
+            <div ref={emojiPanelRef} className="absolute bottom-[76px] left-3 right-3 z-30 rounded-[24px] border border-white/10 bg-[#17191f]/98 p-3 shadow-2xl backdrop-blur-2xl">
+              <div className="mb-2 flex items-center justify-between px-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#F2C94C]">Emojis</p>
+                <button onClick={() => setEmojiOpen(false)} className="text-xs text-white/35" aria-label="Close emojis">Close</button>
+              </div>
+              <div className="grid grid-cols-8 gap-1">
+                {emojis.map((emoji) => (
+                  <button key={emoji} onClick={() => insertEmoji(emoji)} className="flex h-9 items-center justify-center rounded-xl text-xl transition hover:bg-white/10" aria-label={`Insert ${emoji}`}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {photoPreview && (
+            <div className="mb-3 flex items-center gap-3 rounded-[20px] border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] p-2.5">
+              <div className="relative h-16 w-16 overflow-hidden rounded-2xl">
+                <Image src={photoPreview} alt="Selected photo" fill unoptimized className="object-cover" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-black text-[#FFE58C]">{photoFile?.name}</p>
+                <p className="mt-1 text-[10px] text-white/35">{uploadProgress === null ? "Ready to send" : `Uploading ${uploadProgress}%`}</p>
+                {uploadProgress !== null && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#F2C94C] transition-all" style={{ width: `${uploadProgress}%` }} /></div>}
+              </div>
+              <button disabled={sendingMessage} onClick={clearPhoto} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-white/55 disabled:opacity-30" aria-label="Remove selected photo">
+                <DatingIcon name="x" className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-end gap-1.5">
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => choosePhoto(event.target.files?.[0])} />
+            <button onClick={() => fileInputRef.current?.click()} disabled={sendingMessage} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-[#FFE58C] disabled:opacity-30" aria-label="Attach photo">
               <DatingIcon name="image" />
             </button>
+            <button ref={emojiButtonRef} onClick={() => setEmojiOpen((open) => !open)} disabled={sendingMessage} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl text-white/55 transition hover:bg-white/[0.06] disabled:opacity-30" aria-label="Choose emoji">
+              😊
+            </button>
             <textarea
+              ref={textareaRef}
               rows={1}
               maxLength={2000}
               value={message}
@@ -1655,23 +1891,27 @@ function ChatScreen({
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
-                  sendMessage();
+                  void submitComposer();
                 }
               }}
-              placeholder="Write a message..."
+              placeholder={photoFile ? "Add a caption..." : "Write a message..."}
               className="max-h-28 min-h-10 flex-1 resize-none rounded-[20px] border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm outline-none focus:border-[#F2C94C]/40"
             />
-            <button
-              disabled={!message.trim() || sendingMessage}
-              onClick={sendMessage}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2C94C] text-black disabled:opacity-35"
-              aria-label="Send message"
-            >
+            <button disabled={sendingMessage || (!message.trim() && !photoFile)} onClick={() => void submitComposer()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2C94C] text-black disabled:opacity-35" aria-label="Send message">
               {sendingMessage ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/25 border-t-black" /> : <DatingIcon name="send" className="h-4 w-4" />}
             </button>
           </div>
           <button onClick={() => void unmatch(activeMatch)} className="mx-auto mt-2 block text-[9px] font-bold text-white/20 hover:text-red-300">Unmatch</button>
         </div>
+
+        {lightboxUrl && (
+          <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/95 p-4" onClick={() => setLightboxUrl(null)} role="presentation">
+            <button className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white" onClick={() => setLightboxUrl(null)} aria-label="Close photo">
+              <DatingIcon name="x" />
+            </button>
+            <Image src={lightboxUrl} alt="Chat photo full view" width={1200} height={1200} unoptimized className="max-h-[90vh] max-w-full rounded-2xl object-contain" />
+          </div>
+        )}
       </div>
     );
   }
@@ -1679,21 +1919,16 @@ function ChatScreen({
   return (
     <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-7 pt-5">
       <AppHeader title="Messages" subtitle="Your real matches and conversations" />
-
       <div className="mt-5 space-y-2.5">
         {matches.map((match) => (
-          <button
-            key={match.id}
-            onClick={() => void openMatch(match)}
-            className="flex w-full items-center gap-3 rounded-[20px] border border-white/[0.07] bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.05]"
-          >
+          <button key={match.id} onClick={() => void openMatch(match)} className={`flex w-full items-center gap-3 rounded-[20px] border p-3 text-left transition ${match.unreadCount ? "border-[#F2C94C]/25 bg-[#F2C94C]/[0.07]" : "border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.05]"}`}>
             <SmallAvatar profile={match.profile} size="h-14 w-14" />
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1.5">
-                <span className="truncate text-sm font-black">{profileTitle(match.profile)}</span>
+                <span className={`truncate text-sm ${match.unreadCount ? "font-black text-white" : "font-bold text-white/65"}`}>{profileTitle(match.profile)}</span>
                 {match.source === "showcase" && <span className="rounded bg-blue-400/10 px-1.5 py-0.5 text-[7px] font-black text-blue-300">DEMO</span>}
               </span>
-              <span className={`mt-1 block truncate text-[11px] ${match.unreadCount ? "font-bold text-white/70" : "text-white/35"}`}>{match.lastMessage}</span>
+              <span className={`mt-1 block truncate text-[11px] ${match.unreadCount ? "font-bold text-white/75" : "text-white/35"}`}>{match.lastMessage}</span>
             </span>
             <span className="flex flex-col items-end gap-2">
               <span className="text-[9px] text-white/25">{relativeTime(match.lastMessageAt)}</span>
@@ -1702,12 +1937,9 @@ function ChatScreen({
           </button>
         ))}
       </div>
-
       {!matches.length && (
         <div className="mt-12 text-center">
-          <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] text-white/20">
-            <DatingIcon name="chat" className="h-8 w-8" />
-          </span>
+          <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] text-white/20"><DatingIcon name="chat" className="h-8 w-8" /></span>
           <h2 className="mt-5 text-xl font-black">No matches yet</h2>
           <p className="mx-auto mt-2 max-w-[270px] text-sm leading-5 text-white/38">When two members like each other, their private conversation opens here.</p>
         </div>
@@ -1715,7 +1947,6 @@ function ChatScreen({
     </div>
   );
 }
-
 function ProfileScreen({
   memberProfile,
   profile,
@@ -2338,31 +2569,74 @@ function PriceCard({ period, price, featured = false }: { period: string; price:
   return <div className={`rounded-2xl border p-3 ${featured ? "border-[#F2C94C] bg-[#F2C94C]/10" : "border-white/10 bg-white/[0.025]"}`}><p className="text-[9px] font-bold text-white/35">{period}</p><p className="mt-2 text-sm font-black text-[#FFE58C]">{price}</p>{featured && <p className="mt-1 text-[7px] font-black text-[#F2C94C]">BEST VALUE</p>}</div>;
 }
 
-function NotificationsOverlay({ likes, matches, notifications, close, openNotification }: { likes: number; matches: MatchSummary[]; notifications: ActivityNotification[]; close: () => void; openNotification: (url: string) => void }) {
-  const recentMatches = matches.slice(0, 4);
+function NotificationsOverlay({
+  notifications,
+  close,
+  openNotification,
+}: {
+  notifications: ActivityNotification[];
+  close: () => void;
+  openNotification: (notification: ActivityNotification) => void;
+}) {
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
-        <AppHeader title="Activity" subtitle="Likes, matches and messages" />
+        <AppHeader title="Activity" subtitle="Your AfroLove updates" />
         <div className="mt-6 space-y-3">
-          {notifications.map((notification) => (
-            <button key={notification.id} onClick={() => openNotification(notification.url)} className="w-full text-left">
-              <NotificationItem
-                icon={notification.type === "message" ? "chat" : notification.type === "like" ? "heart" : notification.type === "safety" ? "shield" : "sparkles"}
-                title={notification.title}
-                text={`${notification.body} · ${relativeTime(notification.created_at)}`}
-              />
-            </button>
-          ))}
-          {likes > 0 && <NotificationItem icon="heart" title={`${likes} ${likes === 1 ? "person likes" : "people like"} you`} text="Upgrade to reveal incoming profiles." />}
-          {recentMatches.map((match) => <NotificationItem key={match.id} icon="sparkles" title={`You matched with ${match.profile.displayName}`} text={match.lastMessage} />)}
-          {!notifications.length && !likes && !recentMatches.length && <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center"><DatingIcon name="bell" className="mx-auto h-7 w-7 text-white/20" /><p className="mt-4 text-sm font-bold">No new activity</p><p className="mt-1 text-xs text-white/30">We will notify you when something meaningful happens.</p></div>}
+          {notifications.map((notification) => {
+            const unread = !notification.read_at;
+            const icon =
+              notification.type === "message"
+                ? "chat"
+                : notification.type === "like"
+                  ? "heart"
+                  : notification.type === "safety"
+                    ? "shield"
+                    : "sparkles";
+
+            return (
+              <button
+                key={notification.id}
+                onClick={() => openNotification(notification)}
+                className={`flex w-full items-start gap-3 rounded-[22px] border p-4 text-left transition ${
+                  unread
+                    ? "border-[#F2C94C]/30 bg-[#F2C94C]/[0.09] shadow-[0_10px_35px_rgba(242,201,76,0.08)]"
+                    : "border-white/[0.07] bg-white/[0.025] opacity-70 hover:opacity-100"
+                }`}
+              >
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${unread ? "bg-[#F2C94C]/15 text-[#FFE58C]" : "bg-white/[0.05] text-white/35"}`}>
+                  <DatingIcon name={icon} className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-start justify-between gap-3">
+                    <span className={`text-sm ${unread ? "font-black text-white" : "font-bold text-white/55"}`}>
+                      {notification.title}
+                    </span>
+                    <span className="shrink-0 text-[9px] text-white/25">
+                      {relativeTime(notification.created_at)}
+                    </span>
+                  </span>
+                  <span className={`mt-1 block text-xs leading-5 ${unread ? "font-semibold text-white/65" : "text-white/32"}`}>
+                    {notification.body}
+                  </span>
+                </span>
+                {unread && <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#F2C94C]" />}
+              </button>
+            );
+          })}
+
+          {!notifications.length && (
+            <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center">
+              <DatingIcon name="bell" className="mx-auto h-7 w-7 text-white/20" />
+              <p className="mt-4 text-sm font-bold">No activity yet</p>
+              <p className="mt-1 text-xs text-white/30">New likes, matches, messages and safety updates will appear here.</p>
+            </div>
+          )}
         </div>
       </div>
     </OverlayShell>
   );
 }
-
 function NotificationItem({ icon, title, text }: { icon: DatingIconName; title: string; text: string }) {
   return <div className="flex gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name={icon} className="h-5 w-5" /></span><div><p className="text-sm font-black">{title}</p><p className="mt-1 text-[11px] leading-4 text-white/38">{text}</p></div></div>;
 }
