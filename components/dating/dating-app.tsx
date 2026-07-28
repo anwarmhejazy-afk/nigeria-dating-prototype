@@ -1103,6 +1103,26 @@ export function DatingApp({
             requestVerification={() => void requestVerification()}
             openNotificationSettings={() => router.push("/settings/notifications")}
             showToast={showToast}
+            deleteAccount={async (reason) => {
+              await apiRequest<{ success: boolean }>(
+                "/api/account",
+                {
+                  method: "DELETE",
+                  body: JSON.stringify({
+                    confirmation: "DELETE",
+                    reason,
+                  }),
+                },
+              );
+
+              await supabaseRef.current.auth.signOut({
+                scope: "local",
+              });
+
+              window.location.assign(
+                "/login?accountDeleted=1",
+              );
+            }}
           />
         )}
 
@@ -2797,14 +2817,256 @@ function NotificationItem({ icon, title, text }: { icon: DatingIconName; title: 
   return <div className="flex gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name={icon} className="h-5 w-5" /></span><div><p className="text-sm font-black">{title}</p><p className="mt-1 text-[11px] leading-4 text-white/38">{text}</p></div></div>;
 }
 
-function SettingsOverlay({ settings, setSettings, close, editProfile, requestVerification, openNotificationSettings, showToast }: { settings: { notifications: boolean; showOnline: boolean; discoveryVisible: boolean }; setSettings: React.Dispatch<React.SetStateAction<{ notifications: boolean; showOnline: boolean; discoveryVisible: boolean }>>; close: () => void; editProfile: () => void; requestVerification: () => void; openNotificationSettings: () => void; showToast: (text: string) => void }) {
+function SettingsOverlay({
+  settings,
+  setSettings,
+  close,
+  editProfile,
+  requestVerification,
+  openNotificationSettings,
+  showToast,
+  deleteAccount,
+}: {
+  settings: {
+    notifications: boolean;
+    showOnline: boolean;
+    discoveryVisible: boolean;
+  };
+  setSettings: React.Dispatch<
+    React.SetStateAction<{
+      notifications: boolean;
+      showOnline: boolean;
+      discoveryVisible: boolean;
+    }>
+  >;
+  close: () => void;
+  editProfile: () => void;
+  requestVerification: () => void;
+  openNotificationSettings: () => void;
+  showToast: (text: string) => void;
+  deleteAccount: (reason: string) => Promise<void>;
+}) {
+  const [showDelete, setShowDelete] =
+    useState(false);
+  const [confirmation, setConfirmation] =
+    useState("");
+  const [reason, setReason] = useState("");
+  const [deleting, setDeleting] =
+    useState(false);
+  const [deleteError, setDeleteError] =
+    useState("");
+
+  const submitDelete = async () => {
+    if (confirmation.trim() !== "DELETE") {
+      setDeleteError(
+        "Type DELETE exactly to continue.",
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Permanently delete your AfroLove account? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deleteAccount(reason.trim());
+    } catch (caught) {
+      setDeleteError(
+        caught instanceof Error
+          ? caught.message
+          : "Account deletion failed.",
+      );
+      setDeleting(false);
+    }
+  };
+
   return (
     <OverlayShell close={close}>
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-20">
-        <AppHeader title="Settings" subtitle="Privacy, safety and account controls" />
-        <div className="mt-6 space-y-2"><SettingsButton icon="bell" label="Notification settings" onClick={openNotificationSettings} /><SettingToggle label="Show online status" description="Let matches see when you are active" value={settings.showOnline} onChange={() => setSettings((value) => ({ ...value, showOnline: !value.showOnline }))} /><SettingToggle label="Discovery visibility" description="Allow your profile to appear in discovery" value={settings.discoveryVisible} onChange={() => setSettings((value) => ({ ...value, discoveryVisible: !value.discoveryVisible }))} /></div>
-        <div className="mt-6 space-y-2"><SettingsButton icon="crown" label="Membership and billing" onClick={() => { window.location.assign("/premium"); }} /><SettingsButton icon="user" label="Edit dating profile" onClick={editProfile} /><SettingsButton icon="check" label="Request profile verification" onClick={requestVerification} /><SettingsButton icon="shield" label="Safety centre" onClick={() => { window.location.href = "/safety"; }} /><SettingsButton icon="ban" label="Blocked members" onClick={() => showToast("Blocked-members management will be expanded in the next member settings release.")} /></div>
-        <form action="/auth/signout" method="post" className="mt-6"><button className="w-full rounded-2xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-black text-red-300">Sign out</button></form>
+        <AppHeader
+          title="Settings"
+          subtitle="Privacy, safety and account controls"
+        />
+
+        <div className="mt-6 space-y-2">
+          <SettingsButton
+            icon="bell"
+            label="Notification settings"
+            onClick={openNotificationSettings}
+          />
+          <SettingToggle
+            label="Show online status"
+            description="Let matches see when you are active"
+            value={settings.showOnline}
+            onChange={() =>
+              setSettings((value) => ({
+                ...value,
+                showOnline:
+                  !value.showOnline,
+              }))
+            }
+          />
+          <SettingToggle
+            label="Discovery visibility"
+            description="Allow your profile to appear in discovery"
+            value={settings.discoveryVisible}
+            onChange={() =>
+              setSettings((value) => ({
+                ...value,
+                discoveryVisible:
+                  !value.discoveryVisible,
+              }))
+            }
+          />
+        </div>
+
+        <div className="mt-6 space-y-2">
+          <SettingsButton
+            icon="crown"
+            label="Membership and billing"
+            onClick={() => {
+              window.location.assign(
+                "/premium",
+              );
+            }}
+          />
+          <SettingsButton
+            icon="user"
+            label="Edit dating profile"
+            onClick={editProfile}
+          />
+          <SettingsButton
+            icon="check"
+            label="Request profile verification"
+            onClick={requestVerification}
+          />
+          <SettingsButton
+            icon="shield"
+            label="Safety centre"
+            onClick={() => {
+              window.location.href =
+                "/safety";
+            }}
+          />
+          <SettingsButton
+            icon="ban"
+            label="Blocked members"
+            onClick={() =>
+              showToast(
+                "Blocked-members management will be expanded in the next member settings release.",
+              )
+            }
+          />
+        </div>
+
+        <form
+          action="/auth/signout"
+          method="post"
+          className="mt-6"
+        >
+          <button className="w-full rounded-2xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-black text-red-300">
+            Sign out
+          </button>
+        </form>
+
+        <div className="mt-6 rounded-3xl border border-red-500/20 bg-red-500/[0.045] p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
+            Danger zone
+          </p>
+          <h2 className="mt-2 text-lg font-black">
+            Delete account permanently
+          </h2>
+          <p className="mt-2 text-[11px] leading-5 text-red-100/45">
+            Your profile, matches, messages, photos,
+            verification files, subscriptions and payment
+            records are permanently removed. Safety reports
+            and administrator audit records remain preserved
+            with deleted-account labels.
+          </p>
+
+          {!showDelete ? (
+            <button
+              onClick={() =>
+                setShowDelete(true)
+              }
+              className="mt-4 w-full rounded-2xl border border-red-400/25 bg-red-400/[0.08] py-3 text-sm font-black text-red-200"
+            >
+              Start account deletion
+            </button>
+          ) : (
+            <div className="mt-4">
+              <label className="text-xs font-black text-white/65">
+                Optional reason
+              </label>
+              <textarea
+                value={reason}
+                onChange={(event) =>
+                  setReason(event.target.value)
+                }
+                maxLength={500}
+                rows={3}
+                placeholder="Tell us why you are leaving..."
+                className="profile-input mt-2 resize-none"
+              />
+
+              <label className="mt-4 block text-xs font-black text-white/65">
+                Type DELETE exactly
+              </label>
+              <input
+                value={confirmation}
+                onChange={(event) =>
+                  setConfirmation(
+                    event.target.value,
+                  )
+                }
+                autoComplete="off"
+                className="profile-input mt-2"
+              />
+
+              {deleteError && (
+                <p className="mt-3 rounded-xl bg-red-500/10 p-3 text-xs leading-5 text-red-200">
+                  {deleteError}
+                </p>
+              )}
+
+              <button
+                disabled={
+                  deleting ||
+                  confirmation.trim() !==
+                    "DELETE"
+                }
+                onClick={() =>
+                  void submitDelete()
+                }
+                className="mt-4 w-full rounded-2xl bg-red-500 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                {deleting
+                  ? "Deleting safely..."
+                  : "Permanently delete my account"}
+              </button>
+
+              <button
+                disabled={deleting}
+                onClick={() => {
+                  setShowDelete(false);
+                  setConfirmation("");
+                  setReason("");
+                  setDeleteError("");
+                }}
+                className="mt-2 w-full py-2 text-xs font-bold text-white/35"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </OverlayShell>
   );
