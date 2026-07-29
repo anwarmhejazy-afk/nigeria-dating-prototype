@@ -353,6 +353,17 @@ export function AdminDashboard({
           >
             Monetisation & memberships
           </a>
+          <a
+            href="/admin/account-deletion"
+            className="col-span-2 mt-1 block w-full rounded-2xl border border-red-400/25 bg-red-400/[0.06] px-4 py-3 text-center text-xs font-black text-red-200 transition hover:bg-red-400/[0.12] lg:mb-1 lg:mt-2 lg:text-left lg:text-sm"
+          >
+            <span className="block">
+              Account deletion
+            </span>
+            <span className="mt-1 block text-[10px] font-medium leading-4 text-red-100/45">
+              Permanently remove member accounts
+            </span>
+          </a>
           <div className="col-span-2 mt-4 hidden rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/55 lg:block">
             Admins cannot browse unrelated private conversations. Only evidence intentionally submitted in a safety report is shown here.
           </div>

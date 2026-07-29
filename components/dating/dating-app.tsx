@@ -2949,6 +2949,15 @@ function SettingsOverlay({
           />
           <SettingsButton
             icon="shield"
+            label="Help & support"
+            onClick={() => {
+              window.location.assign(
+                "/support",
+              );
+            }}
+          />
+          <SettingsButton
+            icon="shield"
             label="Safety centre"
             onClick={() => {
               window.location.href =
