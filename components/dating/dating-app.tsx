@@ -311,11 +311,34 @@ export function DatingApp({
       ? 0
       : Math.max(
           0,
-          incomingLikeCount - seenIncomingLikeCount,
+          incomingLikeCount -
+            seenIncomingLikeCount,
         );
 
+  const saveLikesReadState = (
+    seenCount: number,
+    currentTotal: number,
+  ) => {
+    void fetch(
+      "/api/likes/read-state",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          seenCount,
+          currentTotal,
+        }),
+      },
+    ).catch(() => undefined);
+  };
+
   useEffect(() => {
-    const storedCount =
+    let active = true;
+
+    const cachedCount =
       Number.parseInt(
         window.localStorage.getItem(
           likesSeenStorageKey,
@@ -323,13 +346,81 @@ export function DatingApp({
         10,
       );
 
+    const safeCachedCount =
+      Number.isFinite(cachedCount) &&
+        cachedCount > 0
+        ? cachedCount
+        : 0;
+
     setSeenIncomingLikeCount(
-      Number.isFinite(storedCount) &&
-        storedCount > 0
-        ? storedCount
-        : 0,
+      safeCachedCount,
     );
-  }, [likesSeenStorageKey]);
+
+    void fetch(
+      "/api/likes/read-state",
+      {
+        cache: "no-store",
+      },
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Likes read state unavailable.",
+          );
+        }
+
+        return response.json();
+      })
+      .then((payload) => {
+        if (!active) return;
+
+        const serverCount =
+          typeof payload.seenCount ===
+            "number" &&
+          Number.isInteger(
+            payload.seenCount,
+          ) &&
+          payload.seenCount >= 0
+            ? payload.seenCount
+            : 0;
+
+        const synchronizedCount =
+          Math.min(
+            incomingLikeCount,
+            Math.max(
+              safeCachedCount,
+              serverCount,
+            ),
+          );
+
+        setSeenIncomingLikeCount(
+          synchronizedCount,
+        );
+
+        window.localStorage.setItem(
+          likesSeenStorageKey,
+          String(synchronizedCount),
+        );
+
+        if (
+          synchronizedCount !==
+          serverCount
+        ) {
+          saveLikesReadState(
+            synchronizedCount,
+            incomingLikeCount,
+          );
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [
+    incomingLikeCount,
+    likesSeenStorageKey,
+  ]);
 
   useEffect(() => {
     if (
@@ -346,14 +437,22 @@ export function DatingApp({
       );
 
     if (
-      nextSeenCount !== seenIncomingLikeCount
+      nextSeenCount !==
+      seenIncomingLikeCount
     ) {
-      setSeenIncomingLikeCount(nextSeenCount);
+      setSeenIncomingLikeCount(
+        nextSeenCount,
+      );
     }
 
     window.localStorage.setItem(
       likesSeenStorageKey,
       String(nextSeenCount),
+    );
+
+    saveLikesReadState(
+      nextSeenCount,
+      incomingLikeCount,
     );
   }, [
     incomingLikeCount,
@@ -365,16 +464,24 @@ export function DatingApp({
   useEffect(() => {
     if (
       seenIncomingLikeCount === null ||
-      seenIncomingLikeCount <= incomingLikeCount
+      seenIncomingLikeCount <=
+        incomingLikeCount
     ) {
       return;
     }
 
-    setSeenIncomingLikeCount(incomingLikeCount);
+    setSeenIncomingLikeCount(
+      incomingLikeCount,
+    );
 
     window.localStorage.setItem(
       likesSeenStorageKey,
       String(incomingLikeCount),
+    );
+
+    saveLikesReadState(
+      incomingLikeCount,
+      incomingLikeCount,
     );
   }, [
     incomingLikeCount,
