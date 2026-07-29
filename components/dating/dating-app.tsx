@@ -238,6 +238,8 @@ export function DatingApp({
   const [matches, setMatches] = useState(initialData.matches);
   const [incomingLikes, setIncomingLikes] = useState(initialData.incomingLikes);
   const [incomingLikeCount, setIncomingLikeCount] = useState(initialData.incomingLikeCount);
+  const [seenIncomingLikeCount, setSeenIncomingLikeCount] =
+    useState<number | null>(null);
   const [activeMatch, setActiveMatch] = useState<MatchSummary | null>(null);
   const [messages, setMessages] = useState<MatchMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -300,6 +302,85 @@ export function DatingApp({
     setToast(text);
     window.setTimeout(() => setToast(""), 2600);
   };
+
+  const likesSeenStorageKey =
+    `afrolove:likes-seen:${memberProfile.id}`;
+
+  const unreadIncomingLikeCount =
+    seenIncomingLikeCount === null
+      ? 0
+      : Math.max(
+          0,
+          incomingLikeCount - seenIncomingLikeCount,
+        );
+
+  useEffect(() => {
+    const storedCount =
+      Number.parseInt(
+        window.localStorage.getItem(
+          likesSeenStorageKey,
+        ) || "0",
+        10,
+      );
+
+    setSeenIncomingLikeCount(
+      Number.isFinite(storedCount) &&
+        storedCount > 0
+        ? storedCount
+        : 0,
+    );
+  }, [likesSeenStorageKey]);
+
+  useEffect(() => {
+    if (
+      tab !== "likes" ||
+      seenIncomingLikeCount === null
+    ) {
+      return;
+    }
+
+    const nextSeenCount =
+      Math.max(
+        incomingLikeCount,
+        seenIncomingLikeCount,
+      );
+
+    if (
+      nextSeenCount !== seenIncomingLikeCount
+    ) {
+      setSeenIncomingLikeCount(nextSeenCount);
+    }
+
+    window.localStorage.setItem(
+      likesSeenStorageKey,
+      String(nextSeenCount),
+    );
+  }, [
+    incomingLikeCount,
+    likesSeenStorageKey,
+    seenIncomingLikeCount,
+    tab,
+  ]);
+
+  useEffect(() => {
+    if (
+      seenIncomingLikeCount === null ||
+      seenIncomingLikeCount <= incomingLikeCount
+    ) {
+      return;
+    }
+
+    setSeenIncomingLikeCount(incomingLikeCount);
+
+    window.localStorage.setItem(
+      likesSeenStorageKey,
+      String(incomingLikeCount),
+    );
+  }, [
+    incomingLikeCount,
+    likesSeenStorageKey,
+    seenIncomingLikeCount,
+  ]);
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
@@ -1034,7 +1115,7 @@ export function DatingApp({
           <BottomNav
             tab={tab}
             unreadCount={unreadCount}
-            likeCount={incomingLikeCount}
+            likeCount={unreadIncomingLikeCount}
             setTab={(nextTab) => {
               setTab(nextTab);
               if (nextTab !== "chat") {
