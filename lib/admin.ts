@@ -121,6 +121,59 @@ function toAdminProfile(row: Row | undefined): AdminProfile | null {
   };
 }
 
+function snapshotToAdminProfile(
+  value: unknown,
+  fallbackId = "",
+): AdminProfile | null {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return null;
+  }
+
+  const snapshot =
+    value as Record<string, unknown>;
+
+  const id =
+    text(snapshot.id, fallbackId) ||
+    fallbackId;
+
+  const displayName =
+    text(
+      snapshot.display_name,
+      "Deleted AfroLove member",
+    );
+
+  return {
+    id,
+    email: nullableText(snapshot.email),
+    displayName:
+      displayName.endsWith(" (deleted)")
+        ? displayName
+        : displayName + " (deleted)",
+    avatarUrl: null,
+    country: text(
+      snapshot.country,
+      "Africa",
+    ),
+    city: text(snapshot.city),
+    accountStatus: "deleted",
+    isVerified: bool(
+      snapshot.is_verified,
+    ),
+    onboardingCompleted: bool(
+      snapshot.onboarding_completed,
+    ),
+    messagingRestrictedUntil: null,
+    suspendedUntil: null,
+    moderationNote:
+      "Account permanently deleted.",
+    createdAt: text(snapshot.created_at),
+  };
+}
+
 export async function isAdmin(supabase: SupabaseClient) {
   const { data, error } = await supabase.rpc("is_afrolove_admin");
   return !error && Boolean(data);
@@ -148,7 +201,7 @@ export async function loadAdminDashboard(
     supabase
       .from("reports")
       .select(
-        "id,reporter_id,reported_id,match_id,category,details,status,evidence_scope,priority,resolution,admin_action,reporter_blocked,reporter_unmatched,created_at,reviewed_at",
+        "id,reporter_id,reported_id,match_id,category,details,status,evidence_scope,priority,resolution,admin_action,reporter_blocked,reporter_unmatched,created_at,reviewed_at,reporter_snapshot,reported_snapshot",
       )
       .order("created_at", { ascending: false })
       .limit(150),
@@ -237,8 +290,18 @@ export async function loadAdminDashboard(
     reporterUnmatched: bool(row.reporter_unmatched),
     createdAt: text(row.created_at),
     reviewedAt: nullableText(row.reviewed_at),
-    reporter: profileMap.get(text(row.reporter_id)) || null,
-    reported: profileMap.get(text(row.reported_id)) || null,
+    reporter:
+      profileMap.get(text(row.reporter_id)) ||
+      snapshotToAdminProfile(
+        row.reporter_snapshot,
+        text(row.reporter_id),
+      ),
+    reported:
+      profileMap.get(text(row.reported_id)) ||
+      snapshotToAdminProfile(
+        row.reported_snapshot,
+        text(row.reported_id),
+      ),
     evidence: evidenceMap.get(text(row.id)) || [],
   }));
 
