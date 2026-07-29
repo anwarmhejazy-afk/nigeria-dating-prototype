@@ -321,51 +321,121 @@ export function AdminDashboard({
       </header>
 
       <div className="mx-auto grid max-w-[1500px] gap-5 px-4 py-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:px-8">
-        <aside data-testid="admin-mobile-navigation" className="grid h-fit grid-cols-2 gap-2 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-3 lg:sticky lg:top-24 lg:block">
+        <aside
+          data-testid="admin-mobile-navigation"
+          className="grid h-fit min-w-0 grid-cols-1 gap-1.5 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-3 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]"
+        >
           {([
-            ["overview", "Overview"],
-            ["reports", `Safety reports (${data.metrics.openReports})`],
-            ["members", "Members"],
-            ["audit", "Audit history"],
-          ] as [Tab, string][]).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`w-full rounded-2xl px-3 py-3 text-center text-xs font-black transition lg:mb-1 lg:px-4 lg:text-left lg:text-sm ${tab === id ? "bg-[#F2C94C] text-black" : "text-white/50 hover:bg-white/5 hover:text-white"}`}
-            >
-              {label}
-            </button>
-          ))}
+            ["overview", "Overview", "O"],
+            ["reports", "Safety reports", "!"],
+            ["members", "Members", "M"],
+            ["audit", "Audit history", "A"],
+          ] as [Tab, string, string][]).map(
+            ([id, label, icon]) => {
+              const count =
+                id === "reports"
+                  ? data.metrics.openReports
+                  : null;
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors motion-reduce:transition-none ${
+                    tab === id
+                      ? "bg-[#F2C94C] text-black"
+                      : "text-white/55 hover:bg-white/[0.055] hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-black ${
+                      tab === id
+                        ? "bg-black/10 text-black"
+                        : "bg-white/[0.06] text-white/45"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {icon}
+                  </span>
+
+                  <span className="min-w-0 text-sm font-black leading-4">
+                    {label}
+                  </span>
+
+                  {count !== null && (
+                    <span
+                      className={`min-w-7 rounded-full px-2 py-1 text-center text-[10px] font-black ${
+                        tab === id
+                          ? "bg-black/10 text-black"
+                          : "bg-white/[0.07] text-white/55"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            },
+          )}
+
+          <div className="my-2 border-t border-white/[0.07] pt-3">
+            <p className="px-3 text-[9px] font-black uppercase tracking-[0.22em] text-white/25">
+              Administration
+            </p>
+          </div>
+
           <a
             href="/admin/age-verification"
-            className="mb-1 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-left text-sm font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12"
+            className="grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-white/55 transition-colors hover:bg-white/[0.055] hover:text-white motion-reduce:transition-none"
           >
-            <span className="block">
-              Age &amp; ID verification ({layeredVerificationCount})
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[10px] font-black text-white/45"
+              aria-hidden="true"
+            >
+              ID
             </span>
-            <span className="mt-1 block text-[10px] font-medium leading-4 text-white/45">
-              Review selfies and government ID
+            <span className="min-w-0 text-sm font-black leading-4">
+              Age &amp; ID verification
+            </span>
+            <span className="min-w-7 rounded-full bg-white/[0.07] px-2 py-1 text-center text-[10px] font-black text-white/55">
+              {ageVerificationCount}
             </span>
           </a>
+
           <a
             href="/admin/monetization"
-            className="col-span-2 mt-1 block w-full rounded-2xl border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-4 py-3 text-center text-xs font-black text-[#FFE58C] transition hover:bg-[#F2C94C]/12 lg:mb-1 lg:mt-2 lg:text-left lg:text-sm"
+            className="grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-white/55 transition-colors hover:bg-white/[0.055] hover:text-white motion-reduce:transition-none"
           >
-            Monetisation & memberships
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm font-black text-white/45"
+              aria-hidden="true"
+            >
+              $
+            </span>
+            <span className="min-w-0 text-sm font-black leading-4">
+              Monetisation &amp; memberships
+            </span>
           </a>
+
           <a
             href="/admin/account-deletion"
-            className="col-span-2 mt-1 block w-full rounded-2xl border border-red-400/25 bg-red-400/[0.06] px-4 py-3 text-center text-xs font-black text-red-200 transition hover:bg-red-400/[0.12] lg:mb-1 lg:mt-2 lg:text-left lg:text-sm"
+            className="grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-red-200/70 transition-colors hover:bg-red-400/[0.07] hover:text-red-100 motion-reduce:transition-none"
           >
-            <span className="block">
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-400/[0.08] text-sm font-black text-red-300/70"
+              aria-hidden="true"
+            >
+              ×
+            </span>
+            <span className="min-w-0 text-sm font-black leading-4">
               Account deletion
             </span>
-            <span className="mt-1 block text-[10px] font-medium leading-4 text-red-100/45">
-              Permanently remove member accounts
-            </span>
           </a>
-          <div className="col-span-2 mt-4 hidden rounded-2xl border border-blue-400/15 bg-blue-400/[0.05] p-4 text-[11px] leading-5 text-blue-100/55 lg:block">
-            Admins cannot browse unrelated private conversations. Only evidence intentionally submitted in a safety report is shown here.
+
+          <div className="mt-3 rounded-2xl border border-blue-400/15 bg-blue-400/[0.045] p-4 text-[10px] leading-5 text-blue-100/45">
+            Admins cannot browse unrelated private conversations.
+            Only evidence intentionally submitted in a safety report
+            is shown here.
           </div>
         </aside>
 
