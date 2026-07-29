@@ -320,13 +320,13 @@ export function AdminDashboard({
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1500px] gap-5 px-4 py-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:px-8">
+      <div className="mx-auto grid max-w-[1500px] gap-5 px-4 py-6 lg:grid-cols-[265px_minmax(0,1fr)] lg:px-8">
         <aside
           data-testid="admin-mobile-navigation"
-          className="grid h-fit min-w-0 grid-cols-1 gap-1.5 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-3 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]"
+          className="grid h-fit min-w-0 grid-cols-1 gap-1 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-3 lg:sticky lg:top-24 lg:self-start"
         >
           {([
-            ["overview", "Overview", "O"],
+            ["overview", "Overview", "⌂"],
             ["reports", "Safety reports", "!"],
             ["members", "Members", "M"],
             ["audit", "Audit history", "A"],
@@ -341,14 +341,14 @@ export function AdminDashboard({
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  className={`grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors motion-reduce:transition-none ${
+                  className={`grid min-h-[48px] w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl px-3 py-2 text-left transition-colors motion-reduce:transition-none ${
                     tab === id
                       ? "bg-[#F2C94C] text-black"
                       : "text-white/55 hover:bg-white/[0.055] hover:text-white"
                   }`}
                 >
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-black ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[11px] font-black ${
                       tab === id
                         ? "bg-black/10 text-black"
                         : "bg-white/[0.06] text-white/45"
@@ -358,7 +358,7 @@ export function AdminDashboard({
                     {icon}
                   </span>
 
-                  <span className="min-w-0 text-sm font-black leading-4">
+                  <span className="min-w-0 whitespace-nowrap text-[13px] font-black leading-4">
                     {label}
                   </span>
 
@@ -378,7 +378,7 @@ export function AdminDashboard({
             },
           )}
 
-          <div className="my-2 border-t border-white/[0.07] pt-3">
+          <div className="my-1.5 border-t border-white/[0.07] pt-2.5">
             <p className="px-3 text-[9px] font-black uppercase tracking-[0.22em] text-white/25">
               Administration
             </p>
@@ -386,15 +386,15 @@ export function AdminDashboard({
 
           <a
             href="/admin/age-verification"
-            className="grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-white/55 transition-colors hover:bg-white/[0.055] hover:text-white motion-reduce:transition-none"
+            className="grid min-h-[48px] w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl px-3 py-2 text-left text-white/55 transition-colors hover:bg-white/[0.055] hover:text-white motion-reduce:transition-none"
           >
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[10px] font-black text-white/45"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[10px] font-black text-white/45"
               aria-hidden="true"
             >
               ID
             </span>
-            <span className="min-w-0 text-sm font-black leading-4">
+            <span className="min-w-0 whitespace-nowrap text-[13px] font-black leading-4">
               Age &amp; ID verification
             </span>
             <span className="min-w-7 rounded-full bg-white/[0.07] px-2 py-1 text-center text-[10px] font-black text-white/55">
@@ -404,35 +404,35 @@ export function AdminDashboard({
 
           <a
             href="/admin/monetization"
-            className="grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-white/55 transition-colors hover:bg-white/[0.055] hover:text-white motion-reduce:transition-none"
+            className="grid min-h-[48px] w-full grid-cols-[28px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-3 py-2 text-left text-white/55 transition-colors hover:bg-white/[0.055] hover:text-white motion-reduce:transition-none"
           >
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm font-black text-white/45"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm font-black text-white/45"
               aria-hidden="true"
             >
               $
             </span>
-            <span className="min-w-0 text-sm font-black leading-4">
+            <span className="min-w-0 whitespace-nowrap text-[13px] font-black leading-4">
               Monetisation &amp; memberships
             </span>
           </a>
 
           <a
             href="/admin/account-deletion"
-            className="grid min-h-[52px] w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-red-200/70 transition-colors hover:bg-red-400/[0.07] hover:text-red-100 motion-reduce:transition-none"
+            className="grid min-h-[48px] w-full grid-cols-[28px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-3 py-2 text-left text-red-200/70 transition-colors hover:bg-red-400/[0.07] hover:text-red-100 motion-reduce:transition-none"
           >
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-400/[0.08] text-sm font-black text-red-300/70"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-red-400/[0.08] text-sm font-black text-red-300/70"
               aria-hidden="true"
             >
               ×
             </span>
-            <span className="min-w-0 text-sm font-black leading-4">
+            <span className="min-w-0 whitespace-nowrap text-[13px] font-black leading-4">
               Account deletion
             </span>
           </a>
 
-          <div className="mt-3 rounded-2xl border border-blue-400/15 bg-blue-400/[0.045] p-4 text-[10px] leading-5 text-blue-100/45">
+          <div className="mt-2 rounded-2xl border border-blue-400/15 bg-blue-400/[0.045] p-3 text-[10px] leading-4 text-blue-100/45">
             Admins cannot browse unrelated private conversations.
             Only evidence intentionally submitted in a safety report
             is shown here.
