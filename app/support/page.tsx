@@ -17,13 +17,6 @@ function mailLink(subject: string) {
 }
 
 export default function SupportPage() {
-  const whatsappLink =
-    supportContact.whatsappDigits
-      ? `https://wa.me/${supportContact.whatsappDigits}?text=${encodeURIComponent(
-          "Hello AfroLove Support, I need assistance with my account.",
-        )}`
-      : null;
-
   return (
     <main className="min-h-screen bg-[#080a0f] px-4 py-8 text-white">
       <section className="mx-auto max-w-4xl">
@@ -44,66 +37,32 @@ export default function SupportPage() {
 
           <Link
             href="/app?tab=profile"
-            className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white/65"
+            className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white/65 transition-colors hover:border-white/20 hover:text-white"
           >
             Back to AfroLove
           </Link>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <a
-            href={mailLink("AfroLove account support")}
-            className="rounded-3xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.055] p-5 transition hover:bg-[#F2C94C]/10"
-          >
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#F2C94C]">
-              Email support
-            </p>
-            <h2 className="mt-3 text-xl font-black">
-              {supportContact.email}
-            </h2>
-            <p className="mt-2 text-xs leading-5 text-white/45">
-              Best for account access, technical issues,
-              billing questions and detailed requests.
-            </p>
-          </a>
-
-          {whatsappLink ? (
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-3xl border border-emerald-400/20 bg-emerald-400/[0.055] p-5 transition hover:bg-emerald-400/10"
-            >
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">
-                WhatsApp support
-              </p>
-              <h2 className="mt-3 text-xl font-black">
-                Start a support chat
-              </h2>
-              <p className="mt-2 text-xs leading-5 text-white/45">
-                Opens the official support conversation in
-                WhatsApp.
-              </p>
-            </a>
-          ) : (
-            <div className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                WhatsApp support
-              </p>
-              <h2 className="mt-3 text-xl font-black text-white/55">
-                Not currently available
-              </h2>
-              <p className="mt-2 text-xs leading-5 text-white/35">
-                Please contact the support team by email.
-              </p>
-            </div>
-          )}
-        </div>
+        <a
+          href={mailLink("AfroLove account support")}
+          className="mt-8 block rounded-3xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.055] p-6 transition-colors hover:bg-[#F2C94C]/10"
+        >
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#F2C94C]">
+            Email support
+          </p>
+          <h2 className="mt-3 break-all text-xl font-black sm:break-normal sm:text-2xl">
+            {supportContact.email}
+          </h2>
+          <p className="mt-2 max-w-2xl text-xs leading-5 text-white/45">
+            Best for account access, technical issues,
+            billing questions and detailed requests.
+          </p>
+        </a>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <a
             href={mailLink("AfroLove billing support")}
-            className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5 transition hover:border-white/15"
+            className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5 transition-colors hover:border-white/15"
           >
             <h2 className="text-base font-black">
               Billing help
@@ -115,7 +74,7 @@ export default function SupportPage() {
 
           <a
             href={mailLink("AfroLove technical support")}
-            className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5 transition hover:border-white/15"
+            className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5 transition-colors hover:border-white/15"
           >
             <h2 className="text-base font-black">
               Technical help
@@ -127,7 +86,7 @@ export default function SupportPage() {
 
           <Link
             href="/safety"
-            className="rounded-3xl border border-red-400/15 bg-red-400/[0.035] p-5 transition hover:bg-red-400/[0.07]"
+            className="rounded-3xl border border-red-400/15 bg-red-400/[0.035] p-5 transition-colors hover:bg-red-400/[0.07]"
           >
             <h2 className="text-base font-black text-red-200">
               Safety concern
@@ -145,8 +104,8 @@ export default function SupportPage() {
           <p className="mt-2 text-xs leading-5 text-blue-100/45">
             AfroLove support will never ask for your password,
             one-time verification code, complete bank-card
-            details or private identity documents through
-            WhatsApp or email.
+            details or private identity documents by email or
+            through any unofficial contact method.
           </p>
         </div>
       </section>
