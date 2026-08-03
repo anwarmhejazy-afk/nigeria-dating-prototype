@@ -124,9 +124,12 @@ export async function POST(request: Request) {
     );
   }
 
+  const requestOrigin = new URL(request.url).origin;
   const siteUrl = (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    new URL(request.url).origin
+    process.env.VERCEL_ENV === "preview"
+      ? requestOrigin
+      : process.env.NEXT_PUBLIC_SITE_URL ||
+        requestOrigin
   ).replace(/\/$/, "");
 
   try {
