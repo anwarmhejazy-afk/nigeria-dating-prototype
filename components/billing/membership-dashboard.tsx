@@ -223,7 +223,7 @@ export function MembershipDashboard({
 
         {!checkoutConfigured && (
           <div className="mt-6 rounded-3xl border border-blue-400/20 bg-blue-400/[0.06] p-5 text-sm leading-6 text-blue-100/70">
-            Flutterwave is currently in safe setup mode. No real money can be collected yet. Super Admins can grant Premium or VIP test access from the monetisation dashboard while the Flutterwave account is being prepared.
+            Paystack is currently in Test Mode. Test payments do not move real money. Use a disposable member account when testing Premium or VIP activation.
           </div>
         )}
 
@@ -271,7 +271,7 @@ export function MembershipDashboard({
                     <button disabled className="w-full rounded-2xl border border-white/10 py-3 text-sm font-black text-white/35">Included automatically</button>
                   ) : (
                     <button onClick={() => void checkout(plan.slug as "premium" | "vip")} disabled={busy !== null} className="w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black disabled:opacity-50">
-                      {busy === plan.slug ? "Opening secure checkout…" : checkoutConfigured ? `Continue with ${plan.title}` : `Test ${plan.title} setup`}
+                      {busy === plan.slug ? "Opening secure checkout…" : checkoutConfigured ? `Continue with ${plan.title}` : `Test ${plan.title} payment`}
                     </button>
                   )}
                 </div>

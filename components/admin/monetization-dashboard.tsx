@@ -43,14 +43,14 @@ export function MonetizationDashboard({
   members,
   subscriptions,
   transactions,
-  flutterwaveConfigured,
+  paystackConfigured,
   currentAdminName,
 }: {
   initialSettings: Settings;
   members: Member[];
   subscriptions: Subscription[];
   transactions: Transaction[];
-  flutterwaveConfigured: boolean;
+  paystackConfigured: boolean;
   currentAdminName: string;
 }) {
   const router = useRouter();
@@ -184,7 +184,7 @@ export function MonetizationDashboard({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-black">Monetisation & Memberships</p>
             <p className="text-[11px] text-white/35">
-              Flutterwave test mode, 50/50 split and access controls
+              Paystack Test Mode, pricing and access controls
             </p>
           </div>
           <div className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-right">
@@ -204,32 +204,25 @@ export function MonetizationDashboard({
           <Metric label="Confirmed revenue" value={formatMoney(revenueMinor, settings.currency)} hint="Successful transactions only" />
         </div>
 
-        {!flutterwaveConfigured && (
+        {!paystackConfigured && (
           <div className="mt-5 rounded-3xl border border-blue-400/20 bg-blue-400/[0.06] p-5 text-sm leading-6 text-blue-100/70">
-            Flutterwave API keys are not added yet. Checkout remains disabled and no money can be collected. Use test memberships below safely.
+            Paystack Test keys are not added yet. Checkout remains disabled. Add the Test keys before running a simulated payment.
           </div>
         )}
         {message && <div className="mt-5 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.07] px-4 py-3 text-sm font-bold text-[#FFE58C]">{message}</div>}
 
         <div className="mt-6 grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
           <section className="rounded-[30px] border border-white/[0.08] bg-white/[0.025] p-6">
-            <p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">FLUTTERWAVE TEST CONFIGURATION</p>
-            <h1 className="mt-2 text-2xl font-black">Pricing, discovery and settlement</h1>
-            <p className="mt-2 text-sm leading-6 text-white/38">The 1:1 ratio represents a 50/50 split after Flutterwave fees. Passed profiles recycle automatically after the selected testing period.</p>
+            <p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">PAYSTACK TEST CONFIGURATION</p>
+            <h1 className="mt-2 text-2xl font-black">Pricing, discovery and checkout</h1>
+            <p className="mt-2 text-sm leading-6 text-white/38">Paystack Test Mode uses simulated payments. Passed profiles recycle automatically after the selected testing period.</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <Field label="Currency"><input className={inputClass} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></Field>
-              <Field label="Test mode"><select className={inputClass} value={settings.flutterwave_test_mode ? "test" : "live"} onChange={(event) => setSettings({ ...settings, flutterwave_test_mode: event.target.value === "test" })}><option value="test">Test mode</option><option value="live">Live mode</option></select></Field>
               <Field label="Premium price in kobo"><input type="number" className={inputClass} value={settings.premium_price_minor} onChange={(event) => setSettings({ ...settings, premium_price_minor: Number(event.target.value) })} /></Field>
               <Field label="VIP price in kobo"><input type="number" className={inputClass} value={settings.vip_price_minor} onChange={(event) => setSettings({ ...settings, vip_price_minor: Number(event.target.value) })} /></Field>
               <Field label="Passed profile return time (hours)"><input type="number" min="1" max="720" className={inputClass} value={settings.pass_recycle_hours} onChange={(event) => setSettings({ ...settings, pass_recycle_hours: Number(event.target.value) })} /><span className="mt-1 block text-[10px] text-white/30">Use 24 hours for testing and about 168 hours (7 days) at launch.</span></Field>
-              <Field label="Premium payment plan ID"><input className={inputClass} value={settings.premium_payment_plan_id || ""} onChange={(event) => setSettings({ ...settings, premium_payment_plan_id: event.target.value })} placeholder="Created in Flutterwave test dashboard" /></Field>
-              <Field label="VIP payment plan ID"><input className={inputClass} value={settings.vip_payment_plan_id || ""} onChange={(event) => setSettings({ ...settings, vip_payment_plan_id: event.target.value })} placeholder="Created in Flutterwave test dashboard" /></Field>
-              <Field label="Your subaccount ID"><input className={inputClass} value={settings.owner_subaccount_id || ""} onChange={(event) => setSettings({ ...settings, owner_subaccount_id: event.target.value })} placeholder="RS_..." /></Field>
-              <Field label="Friend's subaccount ID"><input className={inputClass} value={settings.partner_subaccount_id || ""} onChange={(event) => setSettings({ ...settings, partner_subaccount_id: event.target.value })} placeholder="RS_..." /></Field>
-              <Field label="Your split ratio"><input type="number" min="1" className={inputClass} value={settings.owner_split_ratio} onChange={(event) => setSettings({ ...settings, owner_split_ratio: Number(event.target.value) })} /></Field>
-              <Field label="Friend's split ratio"><input type="number" min="1" className={inputClass} value={settings.partner_split_ratio} onChange={(event) => setSettings({ ...settings, partner_split_ratio: Number(event.target.value) })} /></Field>
             </div>
-            <label className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><input type="checkbox" checked={settings.checkout_enabled} onChange={(event) => setSettings({ ...settings, checkout_enabled: event.target.checked })} /><span><span className="block text-sm font-black">Enable checkout</span><span className="mt-1 block text-xs text-white/35">Leave off until test keys, plans, webhook and both subaccounts are verified.</span></span></label>
+            <label className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><input type="checkbox" checked={settings.checkout_enabled} onChange={(event) => setSettings({ ...settings, checkout_enabled: event.target.checked })} /><span><span className="block text-sm font-black">Enable checkout</span><span className="mt-1 block text-xs text-white/35">Leave off until the Paystack Test key, callback and webhook are verified.</span></span></label>
             <button disabled={busy} onClick={() => void saveSettings()} className="mt-5 w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black disabled:opacity-50">Save settings</button>
           </section>
 
@@ -243,7 +236,7 @@ export function MonetizationDashboard({
               {plan !== "free" && <Field label="Number of days"><input type="number" min="1" max="365" className={inputClass} value={days} onChange={(event) => setDays(Number(event.target.value))} /></Field>}
             </div>
             <button disabled={busy || !memberId} onClick={() => void grant()} className={`mt-5 w-full rounded-2xl py-3 text-sm font-black disabled:opacity-50 ${plan === "free" ? "border border-red-400/30 bg-red-400/10 text-red-200" : "bg-[#F2C94C] text-black"}`}>{busy ? "Updating membership..." : plan === "free" ? "Revoke to Free" : "Grant test access"}</button>
-            <div className="mt-5 rounded-2xl border border-white/[0.07] bg-black/20 p-4 text-xs leading-5 text-white/35"><strong className="text-white/65">Current default:</strong> Premium ₦3,500/month, VIP ₦7,500/month, split ratio 1:1.</div>
+            <div className="mt-5 rounded-2xl border border-white/[0.07] bg-black/20 p-4 text-xs leading-5 text-white/35"><strong className="text-white/65">Current default:</strong> Premium ₦3,500 for 30 days and VIP ₦7,500 for 30 days.</div>
           </section>
         </div>
 
