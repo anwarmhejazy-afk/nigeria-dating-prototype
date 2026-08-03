@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { MembershipDashboard } from "@/components/billing/membership-dashboard";
-import { flutterwaveConfigured } from "@/lib/flutterwave";
+import { paystackConfigured } from "@/lib/paystack";
 import { getMembershipSnapshot } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,7 +42,7 @@ export default async function PremiumPage() {
     <MembershipDashboard
       snapshot={snapshot}
       transactions={history.data || []}
-      checkoutConfigured={flutterwaveConfigured()}
+      checkoutConfigured={paystackConfigured()}
       planPrices={planPrices}
       member={member}
     />

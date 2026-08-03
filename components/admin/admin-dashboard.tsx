@@ -302,12 +302,7 @@ export function AdminDashboard({
                 </button>
               </form>
 
-              <a
-                href="/admin/monetization"
-                className="flex items-center justify-center rounded-full border border-[#F2C94C]/25 px-3 py-2.5 text-center text-[11px] font-black text-[#FFE58C] hover:bg-[#F2C94C]/10 sm:order-2 sm:px-4 sm:py-2 sm:text-xs"
-              >
-                Monetisation
-              </a>
+              
 
               <a
                 href="/app"
