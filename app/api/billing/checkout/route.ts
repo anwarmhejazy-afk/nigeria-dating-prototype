@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "Paystack Test keys are not configured yet.",
+          "Online membership payments are temporarily unavailable.",
       },
       { status: 503 },
     );
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "Paystack checkout is disabled. Enable it from the admin monetisation dashboard after the Test integration is ready.",
+          "Online membership payments are temporarily unavailable.",
       },
       { status: 503 },
     );

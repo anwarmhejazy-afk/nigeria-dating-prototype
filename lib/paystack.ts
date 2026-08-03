@@ -7,7 +7,22 @@ function secretKey() {
 }
 
 export function paystackConfigured() {
-  return /^sk_(test|live)_/.test(secretKey());
+  const key = secretKey();
+  const explicitlyEnabled =
+    process.env.PAYSTACK_CHECKOUT_ENABLED
+      ?.trim()
+      .toLowerCase() === "true";
+
+  if (!explicitlyEnabled) return false;
+
+  if (
+    process.env.VERCEL_ENV === "production" &&
+    key.startsWith("sk_test_")
+  ) {
+    return false;
+  }
+
+  return /^sk_(test|live)_/.test(key);
 }
 
 export function paystackIsTestMode() {
