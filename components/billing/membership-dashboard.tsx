@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { PayPalCurrencyNotice } from "@/components/billing/paypal-currency-notice";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
@@ -270,9 +271,11 @@ export function MembershipDashboard({
                   ) : plan.slug === "free" ? (
                     <button disabled className="w-full rounded-2xl border border-white/10 py-3 text-sm font-black text-white/35">Included automatically</button>
                   ) : (
-                    <button onClick={() => void checkout(plan.slug as "premium" | "vip")} disabled={busy !== null || !checkoutConfigured} className="w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-50">
-                      {busy === plan.slug ? "Opening secure checkout…" : checkoutConfigured ? `Continue with ${plan.title}` : "Payments opening soon"}
-                    </button>
+                    <PayPalCurrencyNotice
+                      plan={plan.slug as "premium" | "vip"}
+                      disabled={busy !== null || !checkoutConfigured}
+                      onConfirm={() => void checkout(plan.slug as "premium" | "vip")}
+                    />
                   )}
                 </div>
               </article>
@@ -318,7 +321,11 @@ export function MembershipDashboard({
             {transactions.length ? transactions.map((transaction) => (
               <div key={transaction.id} className="flex flex-wrap items-center gap-4 border-b border-white/[0.06] bg-white/[0.025] p-4 last:border-0">
                 <div className="min-w-0 flex-1"><p className="font-black capitalize">{transaction.plan_slug}</p><p className="mt-1 text-xs text-white/35">{new Date(transaction.created_at).toLocaleString()}</p></div>
-                <p className="font-black text-[#FFE58C]">{formatMoney(transaction.amount_minor, transaction.currency)}</p>
+                <p className="text-right font-black text-[#FFE58C]">
+                  {transaction.currency === "GBP"
+                    ? `${transaction.plan_slug === "vip" ? "₦7,500" : "₦3,500"} — Paid via PayPal (£${(transaction.amount_minor / 100).toFixed(2)} GBP)`
+                    : formatMoney(transaction.amount_minor, transaction.currency)}
+                </p>
                 <span className="rounded-full bg-white/[0.07] px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white/55">{transaction.status}</span>
               </div>
             )) : <div className="bg-white/[0.025] p-8 text-center text-sm text-white/35">No payment history yet.</div>}
