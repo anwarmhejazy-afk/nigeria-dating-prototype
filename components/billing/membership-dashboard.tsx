@@ -311,8 +311,27 @@ export function MembershipDashboard({
           </div>
         )}
 
-        {snapshot.plan !== "free" && !snapshot.cancelAtPeriodEnd && (
-          <button onClick={() => void cancel()} disabled={busy !== null} className="mt-6 text-xs font-bold text-white/35 underline underline-offset-4">Cancel at the end of the current period</button>
+        {snapshot.plan !== "free" && (
+          snapshot.cancelAtPeriodEnd ? (
+            <div className="mt-6 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-4 py-3">
+              <p className="text-sm font-black text-[#FFE58C]">Membership cancelled</p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                Your {snapshot.plan === "vip" ? "VIP" : "Premium"} benefits remain active{" "}
+                {snapshot.currentPeriodEnd
+                  ? "until " + new Date(snapshot.currentPeriodEnd).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : "until the end of your current billing period"}.
+                {" "}Your subscription will not renew.
+              </p>
+            </div>
+          ) : (
+            <button onClick={() => void cancel()} disabled={busy !== null} className="mt-6 text-xs font-bold text-white/35 underline underline-offset-4">
+              Cancel at the end of the current period
+            </button>
+          )
         )}
 
         <section className="mt-12">
