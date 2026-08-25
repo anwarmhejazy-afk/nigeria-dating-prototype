@@ -184,7 +184,7 @@ export function MonetizationDashboard({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-black">Monetisation & Memberships</p>
             <p className="text-[11px] text-white/35">
-              Paystack Test Mode, pricing and access controls
+              PayPal Sandbox, pricing and access controls
             </p>
           </div>
           <div className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-right">
@@ -206,23 +206,23 @@ export function MonetizationDashboard({
 
         {!paystackConfigured && (
           <div className="mt-5 rounded-3xl border border-blue-400/20 bg-blue-400/[0.06] p-5 text-sm leading-6 text-blue-100/70">
-            Paystack Test keys are not added yet. Checkout remains disabled. Add the Test keys before running a simulated payment.
+            PayPal Sandbox credentials are not configured yet. Checkout remains disabled until the Sandbox setup is complete.
           </div>
         )}
         {message && <div className="mt-5 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.07] px-4 py-3 text-sm font-bold text-[#FFE58C]">{message}</div>}
 
         <div className="mt-6 grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
           <section className="rounded-[30px] border border-white/[0.08] bg-white/[0.025] p-6">
-            <p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">PAYSTACK TEST CONFIGURATION</p>
+            <p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">PAYPAL SANDBOX CONFIGURATION</p>
             <h1 className="mt-2 text-2xl font-black">Pricing, discovery and checkout</h1>
-            <p className="mt-2 text-sm leading-6 text-white/38">Paystack Test Mode uses simulated payments. Passed profiles recycle automatically after the selected testing period.</p>
+            <p className="mt-2 text-sm leading-6 text-white/38">PayPal Sandbox uses test payments. Test memberships can be used to verify the subscription flow safely.</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <Field label="Currency"><input className={inputClass} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></Field>
               <Field label="Premium price in kobo"><input type="number" className={inputClass} value={settings.premium_price_minor} onChange={(event) => setSettings({ ...settings, premium_price_minor: Number(event.target.value) })} /></Field>
               <Field label="VIP price in kobo"><input type="number" className={inputClass} value={settings.vip_price_minor} onChange={(event) => setSettings({ ...settings, vip_price_minor: Number(event.target.value) })} /></Field>
               <Field label="Passed profile return time (hours)"><input type="number" min="1" max="720" className={inputClass} value={settings.pass_recycle_hours} onChange={(event) => setSettings({ ...settings, pass_recycle_hours: Number(event.target.value) })} /><span className="mt-1 block text-[10px] text-white/30">Use 24 hours for testing and about 168 hours (7 days) at launch.</span></Field>
             </div>
-            <label className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><input type="checkbox" checked={settings.checkout_enabled} onChange={(event) => setSettings({ ...settings, checkout_enabled: event.target.checked })} /><span><span className="block text-sm font-black">Enable checkout</span><span className="mt-1 block text-xs text-white/35">Leave off until the Paystack Test key, callback and webhook are verified.</span></span></label>
+            <label className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><input type="checkbox" checked={settings.checkout_enabled} onChange={(event) => setSettings({ ...settings, checkout_enabled: event.target.checked })} /><span><span className="block text-sm font-black">Enable checkout</span><span className="mt-1 block text-xs text-white/35">Leave off until the PayPal Sandbox credentials and callback are verified.</span></span></label>
             <button disabled={busy} onClick={() => void saveSettings()} className="mt-5 w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black disabled:opacity-50">Save settings</button>
           </section>
 

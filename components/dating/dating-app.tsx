@@ -2923,7 +2923,7 @@ function PremiumOverlay({ close }: { close: () => void }) {
         <div className="mt-7 space-y-2 text-left">{features.map((feature) => <div key={feature} className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3.5"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]"><DatingIcon name="check" className="h-4 w-4" /></span><span className="text-sm font-bold text-white/65">{feature}</span></div>)}</div>
         <div className="mt-7 grid grid-cols-2 gap-2"><PriceCard period="Premium" price="₦3,500/month" featured /><PriceCard period="VIP" price="₦7,500/month" /></div>
         <button onClick={() => { window.location.assign("/premium"); }} className="gold-shine mt-5 w-full rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black">View Premium & VIP plans</button>
-        <p className="mt-3 text-[9px] leading-4 text-white/22">Flutterwave test mode is used until live business verification is completed.</p>
+        <p className="mt-3 text-[9px] leading-4 text-white/22">PayPal Sandbox is used for payment testing until live payments are enabled.</p>
       </div>
     </OverlayShell>
   );

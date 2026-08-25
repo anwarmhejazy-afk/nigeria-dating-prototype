@@ -1,6 +1,6 @@
 import { MonetizationDashboard } from "@/components/admin/monetization-dashboard";
 import { getAdminDisplayName } from "@/lib/admin-identity";
-import { paystackConfigured } from "@/lib/paystack";
+import { paypalConfigured } from "@/lib/paypal";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export default async function AdminMonetizationPage() {
       members={members.data || []}
       subscriptions={subscriptions.data || []}
       transactions={transactions.data || []}
-      paystackConfigured={paystackConfigured()}
+      paystackConfigured={paypalConfigured()}
       currentAdminName={getAdminDisplayName(authData.user?.email)}
     />
   );
