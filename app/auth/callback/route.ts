@@ -13,11 +13,13 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      const { data: adminAccess } =
-        await supabase.rpc("is_afrolove_admin");
+      if (next !== "/reset-password") {
+        const { data: adminAccess } =
+          await supabase.rpc("is_afrolove_admin");
 
-      if (adminAccess) {
-        next = "/admin";
+        if (adminAccess) {
+          next = "/admin";
+        }
       }
 
       const forwardedHost = request.headers.get("x-forwarded-host");
