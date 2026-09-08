@@ -29,7 +29,7 @@ export function LegalShell({
           <div className="legal-copy mt-10 space-y-8">{children}</div>
         </div>
         <footer className="border-t border-white/10 px-5 py-6 text-xs text-white/35 sm:px-10">
-          AfroLove prototype legal information. Review with qualified counsel before a public commercial launch.
+          © 2026 AfroLove. Terms, privacy and safety information.
         </footer>
       </section>
     </main>
