@@ -133,6 +133,8 @@ export async function POST(request: Request) {
     },
   });
 
+  const shortReference = `AFR-${String(data).split("-")[0].toUpperCase()}`;
+
   try {
     await Promise.allSettled([
       sendAfroLoveEmail({
@@ -141,7 +143,7 @@ export async function POST(request: Request) {
         text: [
           `${displayName} submitted new verification evidence.`,
           "",
-          `Request reference: ${data}`,
+          `Request reference: ${shortReference}`,
           "",
           "Review it in the AfroLove Admin dashboard.",
           "",
@@ -152,7 +154,7 @@ export async function POST(request: Request) {
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#171717;line-height:1.6">
             <h1 style="font-size:26px;margin-bottom:20px">New verification submission</h1>
             <p><strong>${escapeHtml(displayName)}</strong> submitted new verification evidence.</p>
-            <p>Request reference: <strong>${escapeHtml(String(data))}</strong></p>
+            <p>Request reference: <strong>${escapeHtml(shortReference)}</strong></p>
             <p><a href="https://www.afroloveapp.com/admin/age-verification">Open Admin Dashboard</a></p>
             <p style="margin-top:28px">AfroLove Support<br>support@afroloveapp.com</p>
           </div>
@@ -164,7 +166,7 @@ export async function POST(request: Request) {
         text: [
           `${displayName} submitted new verification evidence.`,
           "",
-          `Request reference: ${data}`,
+          `Request reference: ${shortReference}`,
           "",
           "Review it in the AfroLove Admin dashboard.",
           "",
@@ -175,7 +177,7 @@ export async function POST(request: Request) {
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#171717;line-height:1.6">
             <h1 style="font-size:26px;margin-bottom:20px">New verification submission</h1>
             <p><strong>${escapeHtml(displayName)}</strong> submitted new verification evidence.</p>
-            <p>Request reference: <strong>${escapeHtml(String(data))}</strong></p>
+            <p>Request reference: <strong>${escapeHtml(shortReference)}</strong></p>
             <p><a href="https://www.afroloveapp.com/admin/age-verification">Open Admin Dashboard</a></p>
             <p style="margin-top:28px">AfroLove Support<br>support@afroloveapp.com</p>
           </div>
