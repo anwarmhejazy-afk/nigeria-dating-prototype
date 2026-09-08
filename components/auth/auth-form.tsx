@@ -262,14 +262,29 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <div className="mt-5">
           <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-white/25">
             <span className="h-px flex-1 bg-white/10" />
-            Coming next
+            Or
             <span className="h-px flex-1 bg-white/10" />
           </div>
           <button
-            disabled
-            className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.035] py-3.5 text-sm font-bold text-white/35"
+            type="button"
+            onClick={async () => {
+              setError("");
+
+              const { error: googleError } =
+                await supabase.auth.signInWithOAuth({
+                  provider: "google",
+                  options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+                  },
+                });
+
+              if (googleError) {
+                setError(googleError.message);
+              }
+            }}
+            className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.035] py-3.5 text-sm font-bold text-white transition hover:bg-white/[0.07]"
           >
-            Continue with Google — provider setup required
+            Continue with Google
           </button>
         </div>
       )}
