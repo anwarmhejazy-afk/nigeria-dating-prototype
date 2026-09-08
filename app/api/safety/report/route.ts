@@ -239,10 +239,10 @@ support@afroloveapp.com`,
   emailJobs.push(
     sendAfroLoveEmail({
       to: adminAlertEmails,
-      subject: `New AfroLove safety report #${data}`,
+      subject: `New AfroLove safety report — ${publicReportReference}`,
       text: `A new AfroLove safety report has been submitted.
 
-Report reference: ${data}
+Report reference: ${publicReportReference}
 Category: ${category}
 
 Please sign in to the AfroLove admin dashboard to review the report.
@@ -254,7 +254,7 @@ AfroLove Support`,
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;line-height:1.6;color:#222">
           <h1>New AfroLove safety report</h1>
           <p>A member has submitted a report that requires moderator review.</p>
-          <p><strong>Report reference:</strong> ${escapeHtml(String(data))}</p>
+          <p><strong>Report reference:</strong> ${escapeHtml(publicReportReference)}</p>
           <p><strong>Category:</strong> ${escapeHtml(category.replaceAll("_", " "))}</p>
           <p>
             <a href="https://www.afroloveapp.com/admin"
