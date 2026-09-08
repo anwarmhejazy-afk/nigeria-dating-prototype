@@ -1,6 +1,16 @@
 import { isAdmin } from "@/lib/admin";
+import { sendAfroLoveEmail } from "@/lib/email";
 import { sendPushToUser } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -29,16 +39,67 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   if (verification?.user_id) {
     const approved = decision === "approved";
+    const pushBody = approved
+      ? "Your verified badge is now active."
+      : note || "Your verification request has been reviewed.";
+
     await sendPushToUser(supabase, verification.user_id, {
       type: "verification",
       title: approved ? "Your AfroLove profile is verified" : "Verification request updated",
-      body: approved
-        ? "Your verified badge is now active."
-        : note || "Your verification request has been reviewed.",
+      body: pushBody,
       url: "/app?tab=profile",
       tag: `verification-result-${id}`,
       metadata: { requestId: id, decision },
     });
+
+    const { data: member } = await supabase
+      .from("profiles")
+      .select("email,display_name")
+      .eq("id", verification.user_id)
+      .maybeSingle();
+
+    if (member?.email) {
+      const displayName =
+        typeof member.display_name === "string" && member.display_name.trim()
+          ? member.display_name.trim()
+          : "AfroLove member";
+
+      const subject = approved
+        ? "Your AfroLove profile is verified"
+        : "Your AfroLove verification request was updated";
+
+      const heading = approved
+        ? "You’re verified"
+        : "Verification update";
+
+      try {
+        await sendAfroLoveEmail({
+          to: member.email,
+          subject,
+          text: [
+            `Hi ${displayName},`,
+            "",
+            pushBody,
+            "",
+            "You can review your profile and verification status in AfroLove.",
+            "",
+            "AfroLove Support",
+            "support@afroloveapp.com",
+          ].join("\n"),
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#171717;line-height:1.6">
+              <h1 style="font-size:26px;margin-bottom:20px">${escapeHtml(heading)}</h1>
+              <p>Hi ${escapeHtml(displayName)},</p>
+              <p>${escapeHtml(pushBody)}</p>
+              <p>You can review your profile and verification status in AfroLove.</p>
+              <p style="margin-top:28px">AfroLove Support<br>support@afroloveapp.com</p>
+            </div>
+          `,
+        });
+      } catch (emailError) {
+        console.error("AfroLove verification-result email warning:", emailError);
+      }
+    }
   }
 
   return Response.json({ success: true });

@@ -1,3 +1,3 @@
 export const supportContact = {
-  email: "support.afroloveapp@gmail.com",
+  email: "support@afroloveapp.com",
 } as const;

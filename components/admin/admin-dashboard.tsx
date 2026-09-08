@@ -87,10 +87,16 @@ function StatusBadge({ value }: { value: string }) {
     pending: "bg-amber-400/10 text-amber-200",
     approved: "bg-emerald-400/10 text-emerald-200",
     rejected: "bg-red-400/10 text-red-200",
+    reverification_required: "bg-amber-400/10 text-amber-200",
+    verification_pending: "bg-blue-400/10 text-blue-200",
   };
   return (
-    <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${styles[value] || "bg-white/10 text-white/55"}`}>
-      {value.replaceAll("_", " ")}
+    <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${styles[value] || "bg-white/10 text-white/55"}`}>
+      {value === "reverification_required"
+        ? "REVERIFY REQUIRED"
+        : value === "verification_pending"
+          ? "VERIFICATION PENDING"
+          : value.replaceAll("_", " ")}
     </span>
   );
 }
@@ -113,14 +119,14 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   layered_verification_approve_id:
     "Government ID approved",
   layered_verification_reject:
-    "Verification rejected",
+    "Re-verification required",
   layered_verification_underage:
     "Under 18 — account banned",
   verification_reviewing:
     "Verification review started",
   verification_approved:
     "Legacy verification approved",
-  verification_rejected:
+  reverification_required:
     "Legacy verification rejected",
   verify:
     "Legacy profile verification",
@@ -416,9 +422,9 @@ export function AdminDashboard({
               </div>
               <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
                 <Metric
-                  label="Members"
-                  value={data.metrics.members}
-                  hint={`${data.metrics.activeMembers} available across ${data.metrics.countries} ${data.metrics.countries === 1 ? "country" : "countries"}`}
+                  label="Active members"
+                  value={data.metrics.activeMembers}
+                  hint={`${data.metrics.members} registered across ${data.metrics.countries} ${data.metrics.countries === 1 ? "country" : "countries"}`}
                 />
                 <Metric label="Open reports" value={data.metrics.openReports} hint={`${data.metrics.urgentReports} urgent safety cases`} />
                 <Metric label="Active matches" value={data.metrics.activeMatches} hint={`${data.metrics.messages} saved chat messages`} />

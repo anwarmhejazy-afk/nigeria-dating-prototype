@@ -119,10 +119,25 @@ export function AuthForm({ mode }: { mode: Mode }) {
       if (resetError) throw resetError;
       setMessage("Password reset email sent. Check your inbox for the secure link.");
     } catch (caught) {
-      setError(
+      const rawMessage =
         caught instanceof Error
-          ? caught.message
-          : "Something went wrong. Please try again.",
+          ? caught.message.trim()
+          : typeof caught === "object" &&
+              caught !== null &&
+              "message" in caught &&
+              typeof (caught as { message?: unknown }).message === "string"
+            ? (caught as { message: string }).message.trim()
+            : "";
+
+      const unusableMessage =
+        !rawMessage ||
+        rawMessage === "{}" ||
+        rawMessage === "[object Object]";
+
+      setError(
+        mode === "register" && unusableMessage
+          ? "Unable to create this account. If you believe this is an error, contact support@afroloveapp.com."
+          : rawMessage || "Something went wrong. Please try again.",
       );
     } finally {
       setLoading(false);

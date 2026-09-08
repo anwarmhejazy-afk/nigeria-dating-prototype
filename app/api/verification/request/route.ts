@@ -1,3 +1,4 @@
+import { sendAfroLoveEmail } from "@/lib/email";
 import { sendPushToAdmins } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 
@@ -6,6 +7,15 @@ type Payload = {
   idDocumentPath?: unknown;
   note?: unknown;
 };
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -104,14 +114,17 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
+  const displayName =
+    typeof profile?.display_name === "string" &&
+    profile.display_name.trim()
+      ? profile.display_name.trim()
+      : "A member";
+
   await sendPushToAdmins(supabase, {
     type: "verification",
     title: "New verification evidence",
     body:
-      `${
-        profile?.display_name ||
-        "A member"
-      } submitted verification evidence.`,
+      `${displayName} submitted verification evidence.`,
     url: "/admin/age-verification",
     tag: `verification-${data}`,
     metadata: {
@@ -119,6 +132,62 @@ export async function POST(request: Request) {
       memberId: user.id,
     },
   });
+
+  try {
+    await Promise.allSettled([
+      sendAfroLoveEmail({
+        to: "anwar_hejazy@hotmail.com",
+        subject: "New AfroLove verification submission",
+        text: [
+          `${displayName} submitted new verification evidence.`,
+          "",
+          `Request reference: ${data}`,
+          "",
+          "Review it in the AfroLove Admin dashboard.",
+          "",
+          "AfroLove Support",
+          "support@afroloveapp.com",
+        ].join("\n"),
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#171717;line-height:1.6">
+            <h1 style="font-size:26px;margin-bottom:20px">New verification submission</h1>
+            <p><strong>${escapeHtml(displayName)}</strong> submitted new verification evidence.</p>
+            <p>Request reference: <strong>${escapeHtml(String(data))}</strong></p>
+            <p><a href="https://www.afroloveapp.com/admin/age-verification">Open Admin Dashboard</a></p>
+            <p style="margin-top:28px">AfroLove Support<br>support@afroloveapp.com</p>
+          </div>
+        `,
+      }),
+      sendAfroLoveEmail({
+        to: "ungwadaemmanuel19@gmail.com",
+        subject: "New AfroLove verification submission",
+        text: [
+          `${displayName} submitted new verification evidence.`,
+          "",
+          `Request reference: ${data}`,
+          "",
+          "Review it in the AfroLove Admin dashboard.",
+          "",
+          "AfroLove Support",
+          "support@afroloveapp.com",
+        ].join("\n"),
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#171717;line-height:1.6">
+            <h1 style="font-size:26px;margin-bottom:20px">New verification submission</h1>
+            <p><strong>${escapeHtml(displayName)}</strong> submitted new verification evidence.</p>
+            <p>Request reference: <strong>${escapeHtml(String(data))}</strong></p>
+            <p><a href="https://www.afroloveapp.com/admin/age-verification">Open Admin Dashboard</a></p>
+            <p style="margin-top:28px">AfroLove Support<br>support@afroloveapp.com</p>
+          </div>
+        `,
+      }),
+    ]);
+  } catch (emailError) {
+    console.error(
+      "AfroLove verification admin-email warning:",
+      emailError,
+    );
+  }
 
   return Response.json({
     success: true,

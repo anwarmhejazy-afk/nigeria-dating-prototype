@@ -27,7 +27,7 @@ function configured() {
 function configureWebPush() {
   if (!configured()) return false;
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || "mailto:anwar_hejazy@hotmail.com",
+    process.env.VAPID_SUBJECT || "mailto:support@afroloveapp.com",
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!,
   );

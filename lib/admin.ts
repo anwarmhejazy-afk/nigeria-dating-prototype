@@ -111,7 +111,16 @@ function toAdminProfile(row: Row | undefined): AdminProfile | null {
     avatarUrl: nullableText(row.avatar_url),
     country: text(row.country, "Africa"),
     city: text(row.city),
-    accountStatus: text(row.account_status, "active"),
+    accountStatus:
+      ["suspended", "banned"].includes(text(row.account_status, "active"))
+        ? text(row.account_status, "active")
+        : bool(row.verification_restricted) &&
+            (["rejected"].includes(text(row.photo_verification_status)) ||
+              ["rejected"].includes(text(row.id_verification_status)))
+          ? "reverification_required"
+          : bool(row.verification_restricted)
+            ? "verification_pending"
+            : text(row.account_status, "active"),
     isVerified: bool(row.is_verified),
     onboardingCompleted: bool(row.onboarding_completed),
     messagingRestrictedUntil: nullableText(row.messaging_restricted_until),
@@ -194,7 +203,7 @@ export async function loadAdminDashboard(
     supabase
       .from("profiles")
       .select(
-        "id,email,display_name,avatar_url,country,city,account_status,is_verified,onboarding_completed,messaging_restricted_until,suspended_until,moderation_note,created_at",
+        "id,email,display_name,avatar_url,country,city,account_status,is_verified,onboarding_completed,verification_restricted,photo_verification_status,id_verification_status,messaging_restricted_until,suspended_until,moderation_note,created_at",
       )
       .order("created_at", { ascending: false })
       .limit(200),

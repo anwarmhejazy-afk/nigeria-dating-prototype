@@ -1,4 +1,5 @@
 import { isAdmin } from "@/lib/admin";
+import { sendAfroLoveEmail } from "@/lib/email";
 import { sendPushToUser } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 
@@ -6,6 +7,15 @@ type Payload = {
   decision?: unknown;
   note?: unknown;
 };
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 export async function PATCH(
   request: Request,
@@ -99,6 +109,36 @@ export async function PATCH(
   }
 
   if (verification?.user_id) {
+    if (decision === "underage") {
+      const { error: banError } = await db.rpc(
+        "admin_moderate_member",
+        {
+          p_member_id: verification.user_id,
+          p_action: "ban",
+          p_note:
+            note ||
+            "Under 18 — account banned following age verification review.",
+          p_duration_hours: null,
+        },
+      );
+
+      if (banError) {
+        console.error(
+          "AfroLove automatic underage ban failed:",
+          banError,
+        );
+
+        return Response.json(
+          {
+            error:
+              banError.message ||
+              "Verification was reviewed, but the underage account could not be banned automatically.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const approved = [
       "approve_photo",
       "approve_id",
@@ -113,13 +153,17 @@ export async function PATCH(
           ? "AfroLove verification approved"
           : decision === "require_id"
             ? "Additional ID required"
-            : "Verification updated",
+            : decision === "underage"
+              ? "AfroLove account age restriction"
+              : "Verification updated",
         body: approved
           ? "Your verification has been approved."
-          : note ||
-            (decision === "require_id"
-              ? "Government ID is required to complete your review."
-              : "Your verification request was reviewed."),
+          : decision === "underage"
+            ? "Your account has been banned because AfroLove is only available to adults aged 18 and over."
+            : note ||
+              (decision === "require_id"
+                ? "Government ID is required to complete your review."
+                : "Your verification request was reviewed."),
         url: "/verification",
         tag: `verification-review-${id}`,
         metadata: {
@@ -128,6 +172,83 @@ export async function PATCH(
         },
       },
     );
+
+    const { data: profile } = await db
+      .from("profiles")
+      .select("email,display_name")
+      .eq("id", verification.user_id)
+      .maybeSingle();
+
+    const memberEmail =
+      typeof profile?.email === "string"
+        ? profile.email.trim()
+        : "";
+
+    const memberName =
+      profile?.display_name?.trim() || "there";
+
+    if (memberEmail) {
+      let subject = "AfroLove verification updated";
+      let heading = "Verification update";
+      let message =
+        note ||
+        "Your AfroLove verification request has been reviewed.";
+
+      if (approved) {
+        subject = "Your AfroLove verification is approved";
+        heading = "You’re verified";
+        message =
+          "Your AfroLove verification has been approved successfully.";
+      } else if (decision === "require_id") {
+        subject =
+          "Additional ID is required for AfroLove verification";
+        heading = "Additional ID required";
+        message =
+          note ||
+          "We need a valid government-issued ID to complete your verification.";
+      } else if (decision === "reject") {
+        subject =
+          "Your AfroLove verification needs attention";
+        heading = "Verification was not approved";
+        message =
+          note ||
+          "Your verification could not be approved. Please review the verification page and try again.";
+      } else if (decision === "underage") {
+        subject = "AfroLove age verification update";
+        heading = "Account unavailable due to age requirement";
+        message =
+          "AfroLove is only available to adults aged 18 and over. Your account has therefore been banned following the age verification review.";
+      }
+
+      try {
+        await sendAfroLoveEmail({
+          to: memberEmail,
+          subject,
+          text: `Hi ${memberName},
+
+${message}
+
+If you believe this decision was made in error, reply to this email or contact support@afroloveapp.com.
+
+AfroLove Support
+support@afroloveapp.com`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;line-height:1.6;color:#222">
+              <h1>${escapeHtml(heading)}</h1>
+              <p>Hi ${escapeHtml(String(memberName))},</p>
+              <p>${escapeHtml(message)}</p>
+              <p>If you believe this decision was made in error, reply to this email or contact <strong>support@afroloveapp.com</strong>.</p>
+              <p>AfroLove Support<br>support@afroloveapp.com</p>
+            </div>
+          `,
+        });
+      } catch (emailError) {
+        console.error(
+          "AfroLove verification email failed:",
+          emailError,
+        );
+      }
+    }
   }
 
   return Response.json({ success: true });

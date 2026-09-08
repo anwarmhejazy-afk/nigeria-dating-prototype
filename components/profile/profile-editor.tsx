@@ -436,6 +436,19 @@ export function ProfileEditor({
       }
 
       if (complete) {
+        if (mode === "onboarding") {
+          try {
+            await fetch("/api/email/welcome", {
+              method: "POST",
+            });
+          } catch (emailError) {
+            console.warn(
+              "AfroLove welcome email warning:",
+              emailError,
+            );
+          }
+        }
+
         // AFROLOVE_MANDATORY_VERIFICATION_REDIRECT
         router.replace(
           mode === "onboarding"
