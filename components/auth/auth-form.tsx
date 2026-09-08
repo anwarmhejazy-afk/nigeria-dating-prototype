@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "register" | "forgot";
@@ -19,12 +19,27 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [confirmationPending, setConfirmationPending] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown > 0]);
+
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError("");
     setMessage("");
+    setConfirmationPending(false);
 
     try {
       if (mode === "login") {
@@ -107,6 +122,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
           setMessage(
             "Account created. Check your email and confirm your address to continue.",
           );
+          setConfirmationPending(true);
+          setResendCooldown(60);
         }
         return;
       }
@@ -129,18 +146,92 @@ export function AuthForm({ mode }: { mode: Mode }) {
             ? (caught as { message: string }).message.trim()
             : "";
 
+      const normalizedMessage = rawMessage.toLowerCase();
+      const temporaryEmailFailure =
+        mode === "register" &&
+        (normalizedMessage.includes("email") ||
+          normalizedMessage.includes("smtp") ||
+          normalizedMessage.includes("451") ||
+          normalizedMessage.includes("unexpected_failure") ||
+          normalizedMessage.includes("unexpected failure"));
+
       const unusableMessage =
         !rawMessage ||
         rawMessage === "{}" ||
         rawMessage === "[object Object]";
 
-      setError(
-        mode === "register" && unusableMessage
-          ? "Unable to create this account. If you believe this is an error, contact support@afroloveapp.com."
-          : rawMessage || "Something went wrong. Please try again.",
-      );
+      if (temporaryEmailFailure) {
+        setError(
+          "We couldn't send your confirmation email right now. Please try creating your account again shortly.",
+        );
+      } else {
+        setError(
+          mode === "register" && unusableMessage
+            ? "Unable to create this account. If you believe this is an error, contact support@afroloveapp.com."
+            : rawMessage || "Something went wrong. Please try again.",
+        );
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendConfirmation = async () => {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) {
+      setError("Enter your email address first.");
+      return;
+    }
+
+    if (resendCooldown > 0) {
+      setError(
+        `Please wait ${resendCooldown} second${resendCooldown === 1 ? "" : "s"} before requesting another confirmation email.`,
+      );
+      return;
+    }
+
+    setResending(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+        },
+      });
+
+      if (resendError) throw resendError;
+
+      setMessage(
+        "Confirmation email sent again. Check your inbox and junk folder.",
+      );
+      setConfirmationPending(true);
+      setResendCooldown(60);
+    } catch (caught) {
+      const status =
+        typeof caught === "object" &&
+        caught !== null &&
+        "status" in caught &&
+        typeof (caught as { status?: unknown }).status === "number"
+          ? (caught as { status: number }).status
+          : null;
+
+      if (status === 429) {
+        setError(
+          "Please wait a moment before requesting another confirmation email.",
+        );
+        setResendCooldown(60);
+      } else {
+        setError(
+          "We couldn't resend the confirmation email right now. Please try again shortly.",
+        );
+      }
+    } finally {
+      setResending(false);
     }
   };
 
@@ -257,6 +348,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.08] p-3 text-xs leading-5 text-emerald-200">
             {message}
           </div>
+        )}
+
+        {mode === "register" && confirmationPending && (
+          <button
+            type="button"
+            disabled={resending || resendCooldown > 0}
+            onClick={resendConfirmation}
+            className="w-full rounded-2xl border border-[#F2C94C]/30 bg-[#F2C94C]/[0.06] py-3 text-xs font-bold text-[#F2C94C] transition hover:bg-[#F2C94C]/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resending
+              ? "Sending..."
+              : resendCooldown > 0
+                ? `Resend available in ${resendCooldown}s`
+                : "Resend confirmation email"}
+          </button>
         )}
 
         <button
