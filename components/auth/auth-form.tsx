@@ -275,6 +275,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   provider: "google",
                   options: {
                     redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+                    queryParams: { prompt: "select_account" },
                   },
                 });
 
