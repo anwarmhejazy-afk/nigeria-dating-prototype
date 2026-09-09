@@ -1,8 +1,49 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandArtwork, BrandLogo } from "@/components/brand/brand-logo";
 import { createClient } from "@/lib/supabase/server";
 
+export const metadata: Metadata = {
+  title: "AfroLove – African Dating App for Real Connections",
+  description:
+    "Join AfroLove, also known as Afro Love, a pan-African dating app for African singles seeking genuine connections, meaningful relationships and love across Africa and the diaspora.",
+  keywords: [
+    "AfroLove",
+    "Afro Love",
+    "AfroLove app",
+    "Afro Love app",
+    "AfroLove dating",
+    "Afro Love dating",
+    "African dating app",
+    "African dating site",
+    "African singles",
+    "Pan-African dating",
+    "African diaspora dating",
+  ],
+  alternates: {
+    canonical: "https://www.afroloveapp.com/",
+  },
+  openGraph: {
+    title: "AfroLove – One Africa. Real Connections.",
+    description:
+      "Meet African singles and build meaningful connections with AfroLove.",
+    url: "https://www.afroloveapp.com/",
+    siteName: "AfroLove",
+    type: "website",
+  },
+};
+
 export const dynamic = "force-dynamic";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "AfroLove",
+  alternateName: "Afro Love",
+  url: "https://www.afroloveapp.com/",
+  description:
+    "AfroLove is a pan-African dating platform for African singles seeking genuine connections and meaningful relationships across Africa and the diaspora.",
+};
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -11,7 +52,12 @@ export default async function LandingPage() {
   } = await supabase.auth.getUser();
 
   return (
-    <main className="min-h-screen overflow-hidden px-2 py-3 sm:px-6 sm:py-10">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <main className="min-h-screen overflow-hidden px-2 py-3 sm:px-6 sm:py-10">
       <div className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-6xl flex-col overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0f14]/90 shadow-[0_30px_140px_rgba(0,0,0,0.65)] sm:min-h-[calc(100vh-5rem)] sm:rounded-[34px]">
         <header className="flex items-center justify-between gap-2 border-b border-white/[0.07] px-3 py-3 sm:px-8 sm:py-4">
           <div className="min-w-0 sm:hidden">
@@ -188,6 +234,7 @@ export default async function LandingPage() {
           <Link href="/terms" className="hover:text-[#F2C94C]">Terms</Link>
         </footer>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

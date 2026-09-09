@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "AfroLove Login – Sign In to Your Account",
+  description:
+    "Sign in to AfroLove to access your matches, messages and pan-African dating experience.",
+  alternates: {
+    canonical: "https://www.afroloveapp.com/login",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
