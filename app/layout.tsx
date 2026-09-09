@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description:
     "AfroLove is a premium pan-African dating experience for meaningful connections across Africa and the diaspora.",
   applicationName: "AfroLove",
+  alternates: {
+    canonical: "https://www.afroloveapp.com",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
