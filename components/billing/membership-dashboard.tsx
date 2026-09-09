@@ -273,7 +273,7 @@ export function MembershipDashboard({
                   ) : (
                     <PayPalCurrencyNotice
                       plan={plan.slug as "premium" | "vip"}
-                      disabled={busy !== null || !checkoutConfigured}
+                      disabled={busy !== null || !checkoutConfigured || (snapshot.plan === "vip" && plan.slug === "premium")}
                       onConfirm={() => void checkout(plan.slug as "premium" | "vip")}
                     />
                   )}

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { MembershipDashboard } from "@/components/billing/membership-dashboard";
-import { paystackConfigured } from "@/lib/paystack";
+import { paypalConfigured } from "@/lib/paypal";
 import { getMembershipSnapshot } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,7 +42,7 @@ export default async function PremiumPage() {
     <MembershipDashboard
       snapshot={snapshot}
       transactions={history.data || []}
-      checkoutConfigured={paystackConfigured()}
+      checkoutConfigured={paypalConfigured()}
       planPrices={planPrices}
       member={member}
     />
