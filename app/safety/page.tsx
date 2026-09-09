@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalSection, LegalShell } from "@/components/legal/legal-shell";
 
-export const metadata: Metadata = { title: "Safety Centre" };
+export const metadata: Metadata = {
+  title: "AfroLove Safety Centre – Safer African Dating",
+  description:
+    "Read AfroLove safety guidance for safer online dating, conversations, in-person meetings, reporting, privacy and account protection.",
+};
 
 export default function SafetyPage() {
   return (

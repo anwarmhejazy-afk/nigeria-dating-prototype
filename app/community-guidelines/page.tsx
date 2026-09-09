@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { LegalSection, LegalShell } from "@/components/legal/legal-shell";
 
-export const metadata: Metadata = { title: "Community Guidelines" };
+export const metadata: Metadata = {
+  title: "AfroLove Community Guidelines – Dating Rules",
+  description:
+    "Read the AfroLove Community Guidelines and rules for respectful, genuine and safe connections across our pan-African dating community.",
+};
 
 export default function CommunityGuidelinesPage() {
   return (

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { LegalSection, LegalShell } from "@/components/legal/legal-shell";
 
-export const metadata: Metadata = { title: "Privacy Policy" };
+export const metadata: Metadata = {
+  title: "AfroLove Privacy Policy",
+  description:
+    "Read the AfroLove Privacy Policy to understand how information is collected, used, stored and protected when you use AfroLove.",
+};
 
 export default function PrivacyPage() {
   return (

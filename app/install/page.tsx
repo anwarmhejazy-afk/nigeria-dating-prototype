@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { LegalSection, LegalShell } from "@/components/legal/legal-shell";
 
-export const metadata: Metadata = { title: "Install AfroLove" };
+export const metadata: Metadata = {
+  title: "Install AfroLove – Pan-African Dating App",
+  description:
+    "Install AfroLove and access a pan-African dating experience designed for African singles seeking genuine connections and meaningful relationships.",
+};
 
 export default function InstallPage() {
   return (

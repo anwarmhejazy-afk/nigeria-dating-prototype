@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { LegalSection, LegalShell } from "@/components/legal/legal-shell";
 
-export const metadata: Metadata = { title: "Terms and Conditions" };
+export const metadata: Metadata = {
+  title: "AfroLove Terms and Conditions",
+  description:
+    "Read the AfroLove Terms and Conditions covering accounts, profiles, matching, messaging, safety features, memberships and paid services.",
+};
 
 export default function TermsPage() {
   return (
