@@ -231,7 +231,7 @@ export function MembershipDashboard({
         {message && <div className="mt-5 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.07] px-4 py-3 text-sm font-bold text-[#FFE58C]">{message}</div>}
 
 
-        <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <UsageCard label="Likes today" value={String(snapshot.usage.likesToday)} hint={snapshot.features.daily_like_limit === null ? "Unlimited" : `Free limit ${snapshot.features.daily_like_limit}`} />
           <UsageCard label="Super Likes this week" value={String(snapshot.usage.superLikesThisWeek)} hint={`${snapshot.features.weekly_super_like_limit} available weekly`} />
           <UsageCard label="Rewinds today" value={String(snapshot.usage.rewindsToday)} hint={snapshot.features.rewind ? "Enabled" : "Premium required"} />
@@ -338,9 +338,9 @@ export function MembershipDashboard({
           <div className="flex items-center justify-between gap-4"><div><p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">PAYMENT HISTORY</p><h2 className="mt-2 text-2xl font-black">Your transactions</h2></div></div>
           <div className="mt-5 overflow-hidden rounded-3xl border border-white/[0.08]">
             {transactions.length ? transactions.map((transaction) => (
-              <div key={transaction.id} className="flex flex-wrap items-center gap-4 border-b border-white/[0.06] bg-white/[0.025] p-4 last:border-0">
-                <div className="min-w-0 flex-1"><p className="font-black capitalize">{transaction.plan_slug}</p><p className="mt-1 text-xs text-white/35">{new Date(transaction.created_at).toLocaleString()}</p></div>
-                <p className="text-right font-black text-[#FFE58C]">
+              <div key={transaction.id} className="flex flex-col items-start gap-3 border-b border-white/[0.06] bg-white/[0.025] p-4 last:border-0 sm:flex-row sm:items-center sm:gap-4">
+                <div className="min-w-0 flex-1"><p className="font-black capitalize">{transaction.plan_slug}</p><p className="mt-1 text-xs text-white/35">{new Date(transaction.created_at).toLocaleString("en-GB", { timeZone: "UTC" })}</p></div>
+                <p className="w-full break-words text-left font-black text-[#FFE58C] sm:w-auto sm:text-right">
                   {transaction.currency === "GBP"
                     ? `${transaction.plan_slug === "vip" ? "₦7,500" : "₦3,500"} — Paid via PayPal (£${(transaction.amount_minor / 100).toFixed(2)} GBP)`
                     : formatMoney(transaction.amount_minor, transaction.currency)}
