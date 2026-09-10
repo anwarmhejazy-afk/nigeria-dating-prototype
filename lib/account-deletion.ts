@@ -188,9 +188,7 @@ export async function deleteAfroLoveAccount({
     error: profileError,
   } = await admin
     .from("profiles")
-    .select(
-      "id,email,display_name,country,city,account_status,created_at",
-    )
+    .select("id")
     .eq("id", userId)
     .maybeSingle();
 
@@ -288,15 +286,11 @@ export async function deleteAfroLoveAccount({
   }
 
   const auditMetadata = {
-    targetUserId: userId,
-    targetEmail: profile.email,
-    targetDisplayName: profile.display_name,
-    targetCountry: profile.country,
-    targetCity: profile.city,
-    targetStatus: profile.account_status,
-    targetCreatedAt: profile.created_at,
     actorKind: actor.kind,
-    actorId: actor.id,
+    actorId:
+      actor.kind === "admin"
+        ? actor.id
+        : null,
     reason: text(reason) || null,
     storageRemoved: {
       profilePhotos: summary.profilePhotos,
@@ -306,6 +300,7 @@ export async function deleteAfroLoveAccount({
       chatMedia: summary.chatMedia,
     },
     safetyReportsPreserved: true,
+    personalProfileDataRetained: false,
     deletedAt: now,
   };
 
