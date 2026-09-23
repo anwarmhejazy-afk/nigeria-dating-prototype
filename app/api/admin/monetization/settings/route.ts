@@ -9,17 +9,9 @@ export async function PATCH(request: Request) {
   const payload = await request.json().catch(() => ({}));
 
   const update = {
-    flutterwave_test_mode: payload.flutterwaveTestMode !== false,
-    checkout_enabled: payload.checkoutEnabled === true,
     currency: typeof payload.currency === "string" ? payload.currency.toUpperCase().slice(0, 3) : "NGN",
     premium_price_minor: Math.max(0, Math.round(Number(payload.premiumPriceMinor) || 350000)),
     vip_price_minor: Math.max(0, Math.round(Number(payload.vipPriceMinor) || 750000)),
-    premium_payment_plan_id: typeof payload.premiumPaymentPlanId === "string" ? payload.premiumPaymentPlanId.trim() || null : null,
-    vip_payment_plan_id: typeof payload.vipPaymentPlanId === "string" ? payload.vipPaymentPlanId.trim() || null : null,
-    owner_subaccount_id: typeof payload.ownerSubaccountId === "string" ? payload.ownerSubaccountId.trim() || null : null,
-    partner_subaccount_id: typeof payload.partnerSubaccountId === "string" ? payload.partnerSubaccountId.trim() || null : null,
-    owner_split_ratio: Math.max(1, Number(payload.ownerSplitRatio) || 1),
-    partner_split_ratio: Math.max(1, Number(payload.partnerSplitRatio) || 1),
     pass_recycle_hours: Math.max(1, Math.min(720, Math.round(Number(payload.passRecycleHours) || 24))),
     updated_by: user.id,
     updated_at: new Date().toISOString(),

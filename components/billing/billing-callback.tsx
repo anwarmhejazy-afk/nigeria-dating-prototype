@@ -13,7 +13,7 @@ export function BillingCallback({
   >(validRequest ? "checking" : "failed");
   const [message, setMessage] = useState(
     validRequest
-      ? "Confirming your Paystack payment securely…"
+      ? "Confirming your PayPal payment securely…"
       : "The payment reference is missing. No membership change was made.",
   );
 
