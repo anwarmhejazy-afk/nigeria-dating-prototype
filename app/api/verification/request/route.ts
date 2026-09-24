@@ -138,30 +138,11 @@ export async function POST(request: Request) {
   try {
     await Promise.allSettled([
       sendAfroLoveEmail({
-        to: "anwar_hejazy@hotmail.com",
-        subject: "New AfroLove verification submission",
-        text: [
-          `${displayName} submitted new verification evidence.`,
-          "",
-          `Request reference: ${shortReference}`,
-          "",
-          "Review it in the AfroLove Admin dashboard.",
-          "",
-          "AfroLove Support",
+        to: [
           "support@afroloveapp.com",
-        ].join("\n"),
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#171717;line-height:1.6">
-            <h1 style="font-size:26px;margin-bottom:20px">New verification submission</h1>
-            <p><strong>${escapeHtml(displayName)}</strong> submitted new verification evidence.</p>
-            <p>Request reference: <strong>${escapeHtml(shortReference)}</strong></p>
-            <p><a href="https://www.afroloveapp.com/admin/age-verification">Open Admin Dashboard</a></p>
-            <p style="margin-top:28px">AfroLove Support<br>support@afroloveapp.com</p>
-          </div>
-        `,
-      }),
-      sendAfroLoveEmail({
-        to: "ungwadaemmanuel19@gmail.com",
+          "anwar_hejazy@hotmail.com",
+          "ungwadaemmanuel19@gmail.com",
+        ],
         subject: "New AfroLove verification submission",
         text: [
           `${displayName} submitted new verification evidence.`,
