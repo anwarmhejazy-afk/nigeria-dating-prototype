@@ -107,7 +107,7 @@ export default async function AdminMemberProfilePage({
             href="/admin"
             className="text-sm font-black text-[#F2C94C]"
           >
-            ? Back to Member Management
+            ← Back to Member Management
           </a>
 
           <div className="mt-8 rounded-3xl border border-red-400/20 bg-red-400/[0.05] p-8">
@@ -145,7 +145,7 @@ export default async function AdminMemberProfilePage({
               href="/admin"
               className="text-sm font-black text-[#F2C94C] hover:text-[#FFE58C]"
             >
-              ? Back to Member Management
+              ← Back to Member Management
             </a>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
