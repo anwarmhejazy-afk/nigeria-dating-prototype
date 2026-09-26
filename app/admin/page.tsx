@@ -35,6 +35,7 @@ export default async function AdminPage() {
     <AdminDashboard
       initialData={data}
       currentAdminName={getAdminDisplayName(authData.user?.email)}
+      canViewRevenue={authData.user?.email?.trim().toLowerCase() === "anwar_hejazy@hotmail.com"}
       ageVerificationCount={ageVerificationCount ?? 0}
     />
   );
