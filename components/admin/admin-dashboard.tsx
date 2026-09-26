@@ -397,7 +397,7 @@ export function AdminDashboard({
           {canViewRevenue && (
             <a
               href="/admin/revenue"
-              className="flex min-h-[46px] w-full min-w-0 items-center rounded-xl border border-[#F2C94C]/15 bg-[#F2C94C]/[0.035] px-4 py-2.5 text-left text-[#FFE58C] transition-colors hover:bg-[#F2C94C]/[0.08] motion-reduce:transition-none"
+              className="flex min-h-[46px] w-full min-w-0 items-center rounded-xl px-4 py-2.5 text-left text-white/58 transition-colors hover:bg-white/[0.045] hover:text-white motion-reduce:transition-none"
             >
               <span className="min-w-0 break-words text-[13px] font-black leading-5">
                 Revenue / Payments
