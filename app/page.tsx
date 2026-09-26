@@ -4,7 +4,7 @@ import { BrandArtwork, BrandLogo } from "@/components/brand/brand-logo";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "AfroLove – African Dating App for Real Connections",
+  title: "AfroLove â€“ African Dating App for Real Connections",
   description:
     "Join AfroLove, also known as Afro Love, a pan-African dating app for African singles seeking genuine connections, meaningful relationships and love across Africa and the diaspora.",
   keywords: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     canonical: "https://www.afroloveapp.com/",
   },
   openGraph: {
-    title: "AfroLove – One Africa. Real Connections.",
+    title: "AfroLove â€“ One Africa. Real Connections.",
     description:
       "Meet African singles and build meaningful connections with AfroLove.",
     url: "https://www.afroloveapp.com/",
@@ -94,58 +94,6 @@ export default async function LandingPage() {
         </header>
 
         <section className="relative grid flex-1 items-center gap-7 overflow-hidden px-3 py-5 sm:gap-10 sm:px-8 sm:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:px-14 lg:py-16">
-          {/* AFROLOVE HERO SLIDESHOW TEST START */}
-          <div
-            aria-hidden="true"
-            className="afrolove-hero-slideshow absolute inset-0"
-          >
-            {[
-              [
-                "/profiles/amaka.jpg",
-                "/profiles/aisha.jpg",
-                "/profiles/temi.jpg",
-              ],
-              [
-                "/profiles/ifeoma.jpg",
-                "/profiles/ada.jpg",
-                "/profiles/chidinma.jpg",
-              ],
-              [
-                "/profiles/zainab.jpg",
-                "/profiles/kemi.jpg",
-                "/profiles/amaka.jpg",
-              ],
-            ].map((images, slideIndex) => (
-              <div
-                key={images.join("-")}
-                className="afrolove-hero-slide absolute inset-0"
-                style={{
-                  animationDelay: `${slideIndex * 7}s`,
-                }}
-              >
-                <div className="grid h-full grid-cols-1 sm:grid-cols-3 sm:gap-2">
-                  {images.map((src, imageIndex) => (
-                    <div
-                      key={src + imageIndex}
-                      className={`relative overflow-hidden ${
-                        imageIndex > 0 ? "hidden sm:block" : ""
-                      }`}
-                    >
-                      <div
-                        className="afrolove-hero-photo absolute inset-0 bg-cover bg-top"
-                        style={{ backgroundImage: `url("${src}")` }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="afrolove-hero-overlay-horizontal pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,11,0.94)_0%,rgba(5,7,11,0.86)_38%,rgba(5,7,11,0.52)_70%,rgba(5,7,11,0.68)_100%)]" />
-          <div className="afrolove-hero-overlay-vertical pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.25)_0%,rgba(7,9,13,0.12)_46%,rgba(7,9,13,0.72)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(255,76,76,0.22),transparent_30%),radial-gradient(circle_at_85%_75%,rgba(242,201,76,0.16),transparent_34%)]" />
-          {/* AFROLOVE HERO SLIDESHOW TEST END */}
           <div className="afrolove-hero-copy-panel relative z-10 rounded-[24px] border border-white/[0.06] bg-black/25 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-[2px] sm:rounded-[28px] sm:p-7 lg:-ml-3 lg:p-8">
             <span className="inline-flex rounded-full border border-[#ff5252]/25 bg-[#ff5252]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#ffb2b2]">
               Premium pan-African dating
