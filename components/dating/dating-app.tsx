@@ -1212,6 +1212,7 @@ export function DatingApp({
               incomingLikeCount={incomingLikeCount}
               membership={membership}
               editProfile={() => router.push("/profile/edit")}
+              openHistory={() => router.push("/history")}
               openSettings={() => setOverlay({ type: "settings" })}
               openPremium={() => setOverlay({ type: "premium" })}
             />
@@ -2318,6 +2319,7 @@ function ProfileScreen({
   incomingLikeCount,
   membership,
   editProfile,
+  openHistory,
   openSettings,
   openPremium,
 }: {
@@ -2327,6 +2329,7 @@ function ProfileScreen({
   incomingLikeCount: number;
   membership: MembershipSnapshot;
   editProfile: () => void;
+  openHistory: () => void;
   openSettings: () => void;
   openPremium: () => void;
 }) {
@@ -2405,6 +2408,20 @@ function ProfileScreen({
           <p className="px-1 pb-2 text-[9px] font-black uppercase tracking-[0.22em] text-white/30">
             Account controls
           </p>
+          <button
+            onClick={openHistory}
+            className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-white/[0.04]"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.06] text-[#FFE58C] text-lg font-black">
+              ↺
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black">History</span>
+              <span className="mt-0.5 block text-[10px] text-white/38">Profiles you liked or passed</span>
+            </span>
+            <DatingIcon name="chevron" className="h-4 w-4 text-white/25" />
+          </button>
+          <div className="my-1 h-px bg-white/[0.06]" />
           <button
             onClick={openSettings}
             className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-white/[0.04]"
