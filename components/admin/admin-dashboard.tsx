@@ -596,7 +596,21 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
       <td className="p-4"><StatusBadge value={member.accountStatus} /></td>
       
       <td className="p-4 text-xs text-white/35">{formatDate(member.createdAt)}</td>
-      <td className="p-4"><div className="flex flex-wrap gap-1.5"><button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button><button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button><button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button><button disabled={busy} onClick={() => action("ban")} className="mini-action text-red-200">Ban</button><button disabled={busy} onClick={() => action("restore")} className="mini-action text-emerald-200">Restore</button></div></td>
+      <td className="p-4">
+  <div className="flex flex-wrap gap-1.5">
+    <a
+      href={`/admin/members/${member.id}`}
+      className="mini-action text-[#FFE58C]"
+    >
+      View Profile
+    </a>
+    <button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button>
+    <button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button>
+    <button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button>
+    <button disabled={busy} onClick={() => action("ban")} className="mini-action text-red-200">Ban</button>
+    <button disabled={busy} onClick={() => action("restore")} className="mini-action text-emerald-200">Restore</button>
+  </div>
+</td>
     </tr>
   );
 }
