@@ -4,7 +4,7 @@ import { BrandArtwork, BrandLogo } from "@/components/brand/brand-logo";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "AfroLove â€“ African Dating App for Real Connections",
+  title: "AfroLove - African Dating App for Real Connections",
   description:
     "Join AfroLove, also known as Afro Love, a pan-African dating app for African singles seeking genuine connections, meaningful relationships and love across Africa and the diaspora.",
   keywords: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     canonical: "https://www.afroloveapp.com/",
   },
   openGraph: {
-    title: "AfroLove â€“ One Africa. Real Connections.",
+    title: "AfroLove - One Africa. Real Connections.",
     description:
       "Meet African singles and build meaningful connections with AfroLove.",
     url: "https://www.afroloveapp.com/",
