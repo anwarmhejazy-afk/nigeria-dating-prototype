@@ -115,6 +115,9 @@ function Metric({ label, value, hint }: { label: string; value: number; hint: st
 }
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
+  profile_reminder_requested: "Profile reminder requested",
+  profile_reminder_sent: "Reminder email accepted",
+  profile_reminder_failed: "Reminder email failed",
   layered_verification_approve_photo:
     "Photo approved",
   layered_verification_require_id:
@@ -601,6 +604,19 @@ function PersonCard({ label, member }: { label: string; member: AdminProfile | n
 }
 
 function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean; run: (callback: () => Promise<void>, message: string) => Promise<void> }) {
+  const canRemind = Boolean(member.email) && ["profile_incomplete", "verification_not_submitted", "reverification_required"].includes(member.accountStatus);
+  const sendReminder = () => {
+    if (!window.confirm(`Send a friendly profile/verification reminder to ${member.displayName} at ${member.email}?\n\nThis does not change account status. Only one attempt per member is allowed every 24 hours.`)) return;
+    void run(async () => {
+      const response = await fetch(`/api/admin/members/${member.id}/reminder`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) {
+        const retry = result.retryAt ? ` Try again after ${new Date(result.retryAt).toLocaleString()}.` : "";
+        throw new Error((result.error || "Unable to send reminder.") + retry);
+      }
+      if (result.auditWarning) throw new Error(result.message);
+    }, "Reminder email accepted for sending. Inbox delivery is not confirmed.");
+  };
   const action = (value: string, durationHours?: number) => {
     const note = window.prompt(`Reason for ${value.replaceAll("_", " ")} action:`) || "";
     if (["warn", "restrict_messaging", "suspend", "ban"].includes(value) && !note.trim()) return;
@@ -621,6 +637,7 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
     >
       View Profile
     </a>
+    {canRemind && <button disabled={busy} onClick={sendReminder} className="mini-action text-[#FFE58C]">Send profile reminder</button>}
     <button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button>
     <button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button>
     <button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button>
