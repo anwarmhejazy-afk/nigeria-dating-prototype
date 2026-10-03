@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin, memberReviewStatus } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -158,10 +158,17 @@ export default async function AdminMemberProfilePage({
           </div>
 
           <div className="rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-[#FFE58C]">
-            {valueOrDash(profile.account_status)}
+            {memberReviewStatus(profile).replaceAll("_", " ")}
           </div>
         </div>
 
+
+        {!profile.onboarding_completed && (
+          <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-200">
+            This is an unfinished registration. The member must complete onboarding before submitting verification.
+            An active account status does not mean the dating profile is approved.
+          </p>
+        )}
 
         <section className="mt-7 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-5 sm:p-7">
 
@@ -405,7 +412,7 @@ export default async function AdminMemberProfilePage({
             />
 
             <Detail
-              label="Age verification"
+              label="18+ date-of-birth check (self-declared)"
               value={profile.age_verification_status}
             />
 

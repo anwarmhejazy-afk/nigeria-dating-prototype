@@ -369,6 +369,11 @@ export async function loadMatchingInitialData(
         .neq("id", userId)
         .eq("onboarding_completed", true)
         .eq("profile_visibility", "visible")
+        .eq("age_verification_status", "confirmed")
+        .eq("photo_verification_status", "approved")
+        .in("id_verification_status", ["not_required", "approved"])
+        .eq("verification_restricted", false)
+        .in("account_status", ["active", "warned", "restricted"])
         .order("last_seen", { ascending: false })
         .limit(60),
       supabase

@@ -614,7 +614,7 @@ export function ProfileEditor({
                   <ReviewStat label="Visibility" value="Ready" />
                 </div>
                 <div className="mt-5 rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.06] p-4 text-xs leading-5 text-emerald-100/75">
-                  By publishing, you confirm that your information and photos are genuine and that you are at least 18 years old.
+                  By submitting, you confirm that your information and photos are genuine and that you are at least 18 years old.
                 </div>
               </div>
             )}
@@ -627,7 +627,7 @@ export function ProfileEditor({
               {step < 3 ? (
                 <button type="button" onClick={nextStep} className="gold-shine rounded-2xl bg-[#F2C94C] px-7 py-4 text-sm font-black text-black">Continue</button>
               ) : (
-                <button type="button" disabled={saving || uploading} onClick={() => void saveProfile(true)} className="gold-shine rounded-2xl bg-[#F2C94C] px-7 py-4 text-sm font-black text-black disabled:opacity-50">{saving ? "Saving securely..." : mode === "onboarding" ? "Publish my profile" : "Save profile changes"}</button>
+                <button type="button" disabled={saving || uploading} onClick={() => void saveProfile(true)} className="gold-shine rounded-2xl bg-[#F2C94C] px-7 py-4 text-sm font-black text-black disabled:opacity-50">{saving ? "Saving securely..." : mode === "onboarding" ? "Submit profile for verification" : "Save profile changes"}</button>
               )}
             </div>
           </div>

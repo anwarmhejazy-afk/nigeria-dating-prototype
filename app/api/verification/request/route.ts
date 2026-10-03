@@ -42,6 +42,22 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: memberProfile, error: profileError } = await db
+    .from("profiles")
+    .select("onboarding_completed,account_status")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return Response.json({ error: "Unable to check your profile. Please retry." }, { status: 503 });
+  }
+  if (!memberProfile?.onboarding_completed) {
+    return Response.json({ error: "Complete your profile before submitting verification." }, { status: 403 });
+  }
+  if (["suspended", "banned"].includes(memberProfile.account_status)) {
+    return Response.json({ error: "This account cannot submit verification." }, { status: 403 });
+  }
+
   let payload: Payload;
 
   try {

@@ -88,6 +88,9 @@ function StatusBadge({ value }: { value: string }) {
     approved: "bg-emerald-400/10 text-emerald-200",
     rejected: "bg-red-400/10 text-red-200",
     reverification_required: "bg-amber-400/10 text-amber-200",
+    profile_incomplete: "bg-amber-400/10 text-amber-200",
+    verification_not_submitted: "bg-amber-400/10 text-amber-200",
+    pending_review: "bg-blue-400/10 text-blue-200",
     verification_pending: "bg-blue-400/10 text-blue-200",
   };
   return (

@@ -102,6 +102,21 @@ function bool(value: unknown) {
   return Boolean(value);
 }
 
+// Account eligibility is separate from the raw moderation status.
+export function memberReviewStatus(row: Record<string, unknown>) {
+  const status = text(row.account_status, "active");
+  if (["suspended", "banned", "deleted"].includes(status)) return status;
+  if (!bool(row.onboarding_completed)) return "profile_incomplete";
+  if (text(row.photo_verification_status) === "rejected" ||
+      text(row.id_verification_status) === "rejected") return "reverification_required";
+  if (bool(row.verification_restricted)) {
+    return [row.photo_verification_status, row.id_verification_status].includes("reviewing")
+      ? "pending_review"
+      : "verification_not_submitted";
+  }
+  return status;
+}
+
 function toAdminProfile(row: Row | undefined): AdminProfile | null {
   if (!row) return null;
   return {
@@ -111,16 +126,7 @@ function toAdminProfile(row: Row | undefined): AdminProfile | null {
     avatarUrl: nullableText(row.avatar_url),
     country: text(row.country, "Africa"),
     city: text(row.city),
-    accountStatus:
-      ["suspended", "banned"].includes(text(row.account_status, "active"))
-        ? text(row.account_status, "active")
-        : bool(row.verification_restricted) &&
-            (["rejected"].includes(text(row.photo_verification_status)) ||
-              ["rejected"].includes(text(row.id_verification_status)))
-          ? "reverification_required"
-          : bool(row.verification_restricted)
-            ? "verification_pending"
-            : text(row.account_status, "active"),
+    accountStatus: memberReviewStatus(row),
     isVerified: bool(row.is_verified),
     onboardingCompleted: bool(row.onboarding_completed),
     messagingRestrictedUntil: nullableText(row.messaging_restricted_until),
