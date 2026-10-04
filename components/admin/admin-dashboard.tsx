@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { AuditHistory } from "@/components/admin/audit-history";
 import { useMemo, useState } from "react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import type {
@@ -529,21 +530,8 @@ export function AdminDashboard({
             </div>
           )}
 
-          {tab === "audit" && (
-            <div>
-              <h1 className="text-3xl font-black">Audit history</h1>
-              <p className="mt-1 text-sm text-white/35">Immutable records of reports and moderator actions.</p>
-              <div className="mt-5 space-y-2">
-                {data.audit.map((entry) => (
-                  <div key={entry.id} className="grid gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 md:grid-cols-[180px_1fr_220px]">
-                    <p className="text-xs font-black text-[#FFE58C]">{auditActionLabel(entry.action)}</p>
-                    <p className="text-xs text-white/50">{entry.adminName} → {entry.targetName}</p>
-                    <p className="text-xs text-white/30 md:text-right">{formatDate(entry.createdAt)}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {tab === "audit" && <AuditHistory actionLabel={auditActionLabel} />}
+
         </section>
       </div>
 
