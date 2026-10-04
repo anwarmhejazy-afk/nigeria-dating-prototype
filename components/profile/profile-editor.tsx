@@ -322,7 +322,8 @@ export function ProfileEditor({
     setPhotos((previous) => [url, ...previous.filter((photo) => photo !== url)]);
   };
 
-  const saveProfile = async (complete: boolean) => {
+  const saveProfile = async (complete: boolean, signOutAfterSave = false) => {
+    if (saving || uploading) return;
     setError("");
     setSuccess("");
 
@@ -435,6 +436,18 @@ export function ProfileEditor({
         );
       }
 
+      if (signOutAfterSave) {
+        try {
+          const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+          if (signOutError) throw signOutError;
+        } catch {
+          setError("Your draft was saved, but we could not sign you out. Please try Save and sign out again.");
+          return;
+        }
+        window.location.replace("/login?draft=saved&next=/onboarding");
+        return;
+      }
+
       if (complete) {
         if (mode === "onboarding") {
           try {
@@ -458,7 +471,7 @@ export function ProfileEditor({
         router.refresh();
       } else {
         setSuccess(
-          "Draft saved securely. You can finish your profile now.",
+          "Draft saved. You can return later to finish your profile.",
         );
       }
     } catch (caught) {
@@ -620,12 +633,15 @@ export function ProfileEditor({
             )}
 
             <div className="mt-8 flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {step > 0 && <button type="button" onClick={() => { setError(""); setStep((previous) => previous - 1); }} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3.5 text-sm font-black text-white/65">Back</button>}
-                {mode === "onboarding" && step < 3 && <button type="button" disabled={saving} onClick={() => void saveProfile(false)} className="rounded-2xl px-4 py-3.5 text-xs font-black text-white/40 hover:text-white/70">Save draft</button>}
+                {mode === "onboarding" && <>
+                  <button type="button" disabled={saving || uploading} onClick={() => void saveProfile(false)} className="rounded-2xl px-4 py-3.5 text-xs font-black text-white/60 hover:text-white/80 disabled:opacity-50">Save draft</button>
+                  <button type="button" disabled={saving || uploading} onClick={() => void saveProfile(false, true)} className="rounded-2xl border border-white/10 px-4 py-3.5 text-xs font-black text-white/70 hover:text-white disabled:opacity-50">Save and sign out</button>
+                </>}
               </div>
               {step < 3 ? (
-                <button type="button" onClick={nextStep} className="gold-shine rounded-2xl bg-[#F2C94C] px-7 py-4 text-sm font-black text-black">Continue</button>
+                <button type="button" disabled={saving || uploading} onClick={nextStep} className="gold-shine rounded-2xl bg-[#F2C94C] px-7 py-4 text-sm font-black text-black disabled:opacity-50">Continue</button>
               ) : (
                 <button type="button" disabled={saving || uploading} onClick={() => void saveProfile(true)} className="gold-shine rounded-2xl bg-[#F2C94C] px-7 py-4 text-sm font-black text-black disabled:opacity-50">{saving ? "Saving securely..." : mode === "onboarding" ? "Submit profile for verification" : "Save profile changes"}</button>
               )}

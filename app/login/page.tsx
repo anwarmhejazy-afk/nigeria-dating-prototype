@@ -16,7 +16,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ draft?: string }> }) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,6 +33,11 @@ export default async function LoginPage() {
       title="Sign in to continue"
       description="Access your matches, messages and premium pan-African dating experience."
     >
+      {params.draft === "saved" && (
+        <p role="status" className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">
+          Your draft is saved. Sign in anytime to continue.
+        </p>
+      )}
       <AuthForm mode="login" />
     </AuthShell>
   );
