@@ -605,6 +605,29 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
       if (result.auditWarning) throw new Error(result.message);
     }, "Reminder email accepted for sending. Inbox delivery is not confirmed.");
   };
+  const resetDiscovery = () => {
+    if (
+      !window.confirm(
+        `Reset discovery for ${member.displayName}?\n\nThis will remove this member's previous Pass choices so eligible profiles can appear again. Likes, matches, chats and membership will not be changed.`,
+      )
+    ) {
+      return;
+    }
+
+    void run(async () => {
+      const response = await fetch(
+        `/api/admin/members/${member.id}/reset-discovery`,
+        { method: "POST" },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to reset discovery.");
+      }
+    }, "Discovery reset. Passed profiles can appear again.");
+  };
+
   const action = (value: string, durationHours?: number) => {
     const note = window.prompt(`Reason for ${value.replaceAll("_", " ")} action:`) || "";
     if (["warn", "restrict_messaging", "suspend", "ban"].includes(value) && !note.trim()) return;
@@ -626,6 +649,7 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
       View Profile
     </a>
     {canRemind && <button disabled={busy} onClick={sendReminder} className="mini-action text-[#FFE58C]">Send profile reminder</button>}
+    <button disabled={busy} onClick={resetDiscovery} className="mini-action text-blue-200">Reset Discovery</button>
     <button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button>
     <button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button>
     <button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button>
