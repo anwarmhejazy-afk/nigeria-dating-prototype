@@ -269,6 +269,78 @@ export function DatingApp({
   const activityUnseenCount = activityNotifications.filter((item) => !item.seen_at).length;
   const selfProfile = useMemo(() => memberToDiscovery(memberProfile), [memberProfile]);
 
+  const openMemberDetails = (profile: DiscoveryProfile) => {
+    if (membership.plan !== "vip") {
+      showToast("Full profile viewing is a VIP feature.");
+      setOverlay({ type: "premium" });
+      return;
+    }
+
+    setOverlay({ type: "details", profile });
+  };
+
+  const refreshDiscovery = () => {
+    if (membership.plan !== "free") {
+      window.location.reload();
+      return;
+    }
+
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    const storageKey = `afrolove:discover-refresh:${memberProfile.id}`;
+
+    let usage = {
+      date: today,
+      count: 0,
+    };
+
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+
+      if (saved) {
+        const parsed = JSON.parse(saved);
+
+        if (parsed.date === today) {
+          usage = {
+            date: today,
+            count: Number.isFinite(Number(parsed.count))
+              ? Number(parsed.count)
+              : 0,
+          };
+        }
+      }
+    } catch {
+      // Continue if browser storage is unavailable.
+    }
+
+    if (usage.count >= 2) {
+      showToast(
+        "You've used your 2 free Discover refreshes for today. Your refreshes reset tomorrow. Upgrade to Premium or VIP for more discovery access.",
+      );
+      setOverlay({ type: "premium" });
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          date: today,
+          count: usage.count + 1,
+        }),
+      );
+    } catch {
+      // Continue if browser storage is unavailable.
+    }
+
+    window.location.reload();
+  };
+
   const filteredCandidates = useMemo(() => {
     const query = search.trim().toLowerCase();
     return candidates.filter((profile) => {
@@ -1134,7 +1206,7 @@ export function DatingApp({
               search={search}
               setSearch={setSearch}
               setTab={setTab}
-              openDetails={(profile) => setOverlay({ type: "details", profile })}
+              openDetails={openMemberDetails}
               openMatch={openMatch}
               openNotifications={openNotificationsPanel}
               openPremium={() => setOverlay({ type: "premium" })}
@@ -1158,13 +1230,13 @@ export function DatingApp({
               onPointerUp={onPointerUp}
               swipe={swipe}
               undoSwipe={undoSwipe}
-              openDetails={(profile) => setOverlay({ type: "details", profile })}
+              openDetails={openMemberDetails}
               openSafety={(profile) => setOverlay({ type: "safety", profile })}
               openPremium={() => setOverlay({ type: "premium" })}
               openFilters={() => membership.features.advanced_filters ? setOverlay({ type: "filters" }) : setOverlay({ type: "premium" })}
               membershipPlan={membership.plan}
               passRecycleHours={initialData.passRecycleHours}
-              refresh={() => window.location.reload()}
+              refresh={refreshDiscovery}
             />
           )}
 
