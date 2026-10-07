@@ -1359,8 +1359,51 @@ export function DatingApp({
                 }
               }}
               sendMessage={() => {
-                if (!matchedProfile) return;
-                void openMatch(matchedProfile);
+                if (matchedProfile) {
+                  void openMatch(matchedProfile);
+                  return;
+                }
+
+                void (async () => {
+                  try {
+                    const result = await apiRequest<{
+                      type: "match" | "direct";
+                      matchId: string | null;
+                      conversationId: string | null;
+                    }>("/api/vip-direct/start", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        targetId: overlay.profile.id,
+                      }),
+                    });
+
+                    if (result.type === "match" && result.matchId) {
+                      const existingMatch = matches.find(
+                        (match) => match.id === result.matchId,
+                      );
+
+                      if (existingMatch) {
+                        await openMatch(existingMatch);
+                        return;
+                      }
+
+                      window.location.assign("/app?tab=chat");
+                      return;
+                    }
+
+                    if (result.conversationId) {
+                      window.location.assign(
+                        `/direct/${result.conversationId}`,
+                      );
+                    }
+                  } catch (error) {
+                    showToast(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to start this conversation.",
+                    );
+                  }
+                })();
               }}
               openSafety={() =>
                 setOverlay({ type: "safety", profile: overlay.profile })

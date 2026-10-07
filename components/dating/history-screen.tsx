@@ -329,13 +329,77 @@ export function HistoryScreen({
                   </section>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setSelected(null)}
-                  className="w-full rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black"
-                >
-                  Close profile
-                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    className="rounded-2xl border border-white/10 py-3.5 text-sm font-black text-white/55"
+                  >
+                    Close profile
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const profile = selected;
+
+                      void (async () => {
+                        try {
+                          const response = await fetch(
+                            "/api/vip-direct/start",
+                            {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                targetId: profile.id,
+                              }),
+                            },
+                          );
+
+                          const payload = await response.json();
+
+                          if (!response.ok) {
+                            throw new Error(
+                              payload?.error ||
+                                "Unable to start this conversation.",
+                            );
+                          }
+
+                          if (
+                            payload.type === "direct" &&
+                            payload.conversationId
+                          ) {
+                            window.location.assign(
+                              `/direct/${payload.conversationId}`,
+                            );
+                            return;
+                          }
+
+                          if (
+                            payload.type === "match" &&
+                            payload.matchId
+                          ) {
+                            window.location.assign(
+                              "/app?tab=chat",
+                            );
+                          }
+                        } catch (error) {
+                          window.alert(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to start this conversation.",
+                          );
+                        }
+                      })();
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black"
+                  >
+                    <span>✉</span>
+                    Send a Message
+                  </button>
+                </div>
               </div>
             </div>
           </div>
