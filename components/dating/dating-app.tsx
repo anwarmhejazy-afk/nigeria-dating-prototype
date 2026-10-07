@@ -271,7 +271,7 @@ export function DatingApp({
 
   const openMemberDetails = (profile: DiscoveryProfile) => {
     if (membership.plan !== "vip") {
-      showToast("Full profile viewing is a VIP feature.");
+      showToast("Full profiles are VIP-only.");
       setOverlay({ type: "premium" });
       return;
     }
@@ -1308,23 +1308,35 @@ export function DatingApp({
           />
         )}
 
-        {overlay?.type === "details" && (
-          <DetailsOverlay
-            profile={overlay.profile}
-            close={() => setOverlay(null)}
-            like={() => {
-              setOverlay(null);
-              if (candidates.some((item) => item.id === overlay.profile.id)) {
-                void finishInteraction(overlay.profile, "like");
-              } else {
-                showToast("This profile is already in your activity.");
+        {overlay?.type === "details" && (() => {
+          const matchedProfile = matches.find(
+            (match) => match.profile.id === overlay.profile.id,
+          );
+
+          return (
+            <DetailsOverlay
+              profile={overlay.profile}
+              close={() => setOverlay(null)}
+              matched={Boolean(matchedProfile)}
+              like={() => {
+                setOverlay(null);
+
+                if (candidates.some((item) => item.id === overlay.profile.id)) {
+                  void finishInteraction(overlay.profile, "like");
+                } else {
+                  showToast("This profile is already in your activity.");
+                }
+              }}
+              sendMessage={() => {
+                if (!matchedProfile) return;
+                void openMatch(matchedProfile);
+              }}
+              openSafety={() =>
+                setOverlay({ type: "safety", profile: overlay.profile })
               }
-            }}
-            openSafety={() =>
-              setOverlay({ type: "safety", profile: overlay.profile })
-            }
-          />
-        )}
+            />
+          );
+        })()}
 
         {overlay?.type === "match" && (
           <MatchOverlay
@@ -2611,7 +2623,21 @@ function FiltersOverlay({
   );
 }
 
-function DetailsOverlay({ profile, close, like, openSafety }: { profile: DiscoveryProfile; close: () => void; like: () => void; openSafety: () => void }) {
+function DetailsOverlay({
+  profile,
+  close,
+  like,
+  matched,
+  sendMessage,
+  openSafety,
+}: {
+  profile: DiscoveryProfile;
+  close: () => void;
+  like: () => void;
+  matched: boolean;
+  sendMessage: () => void;
+  openSafety: () => void;
+}) {
   // AFROLOVE_PROFILE_GALLERY_NAVIGATION
   const [photoIndex, setPhotoIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -2967,16 +2993,29 @@ function DetailsOverlay({ profile, close, like, openSafety }: { profile: Discove
           Not now
         </button>
 
-        <button
-          onClick={like}
-          className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black"
-        >
-          <DatingIcon
-            name="heart"
-            className="h-4 w-4"
-          />
-          Like profile
-        </button>
+        {matched ? (
+          <button
+            onClick={sendMessage}
+            className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black"
+          >
+            <DatingIcon
+              name="send"
+              className="h-4 w-4"
+            />
+            Send Message
+          </button>
+        ) : (
+          <button
+            onClick={like}
+            className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black"
+          >
+            <DatingIcon
+              name="heart"
+              className="h-4 w-4"
+            />
+            Like to Connect
+          </button>
+        )}
       </div>
     </OverlayShell>
   );
