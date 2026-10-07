@@ -1875,12 +1875,26 @@ function DiscoverScreen({
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F2C94C]/10 text-[#F2C94C]">
               <DatingIcon name="refresh" className="h-7 w-7" />
             </span>
-            <h2 className="mt-5 text-xl font-black">You are all caught up</h2>
+
+            <h2 className="mt-5 text-xl font-black">
+              {membershipPlan === "vip"
+                ? "Ready for another look?"
+                : "You are all caught up"}
+            </h2>
+
             <p className="mt-2 text-sm leading-5 text-white/40">
-              New compatible profiles will appear as members complete onboarding.
+              {membershipPlan === "vip"
+                ? "Refresh to bring back eligible profiles you've passed."
+                : "New compatible profiles will appear as members complete onboarding."}
             </p>
-            <button onClick={refresh} className="mt-5 rounded-full bg-[#F2C94C] px-5 py-2.5 text-xs font-black text-black">
-              Refresh discovery
+
+            <button
+              onClick={refresh}
+              className="mt-5 rounded-full bg-[#F2C94C] px-5 py-2.5 text-xs font-black text-black"
+            >
+              {membershipPlan === "vip"
+                ? "Refresh profiles"
+                : "Refresh discovery"}
             </button>
           </div>
         )}
