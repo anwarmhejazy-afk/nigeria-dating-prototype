@@ -2822,7 +2822,7 @@ function DetailsOverlay({
 
   return (
     <OverlayShell close={close}>
-      <div className="app-scroll min-h-0 flex-1 overflow-y-auto pb-28">
+      <div className="app-scroll min-h-0 flex-1 overflow-y-auto">
         <div
           className="relative h-[480px] touch-pan-y select-none overflow-hidden focus:outline-none"
           onTouchStart={handleTouchStart}
