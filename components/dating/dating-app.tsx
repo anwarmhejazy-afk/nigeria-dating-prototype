@@ -281,7 +281,7 @@ export function DatingApp({
 
   const refreshDiscovery = () => {
     if (membership.plan !== "free") {
-      window.location.reload();
+      window.location.assign("/app?tab=discover");
       return;
     }
 
@@ -338,7 +338,7 @@ export function DatingApp({
       // Continue if browser storage is unavailable.
     }
 
-    window.location.reload();
+    window.location.assign("/app?tab=discover");
   };
 
   const filteredCandidates = useMemo(() => {
@@ -766,8 +766,10 @@ export function DatingApp({
         showToast(`Like sent to ${profile.displayName}`);
       } else if (action === "super_like") {
         showToast(`Super Like sent to ${profile.displayName}`);
-      } else if (action === "pass") {
-        showToast(`${profile.displayName} can return after ${initialData.passRecycleHours} hours`);
+      } else if (action === "pass" && membership.plan !== "vip") {
+        showToast(
+          `${profile.displayName} can return after ${initialData.passRecycleHours} hours`,
+        );
       }
 
       setHistory((previous) => [
@@ -1704,14 +1706,21 @@ function DiscoverScreen({
 
       <button
         onClick={membershipPlan === "free" ? openPremium : openFilters}
-        className="gold-shine mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#F2C94C,#FFE58C)] py-2 text-xs font-black text-black"
+        className={
+          membershipPlan === "free"
+            ? "gold-shine mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#F2C94C,#FFE58C)] py-2 text-xs font-black text-black"
+            : "mt-3 ml-auto flex w-fit items-center gap-2 rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/[0.06] px-3 py-2 text-[11px] font-black text-[#FFE58C]"
+        }
       >
-        <DatingIcon name={membershipPlan === "free" ? "crown" : "filter"} className="h-4 w-4" />
+        <DatingIcon
+          name={membershipPlan === "free" ? "crown" : "filter"}
+          className="h-4 w-4"
+        />
         {membershipPlan === "free"
           ? "Upgrade for unlimited likes, filters and rewind"
           : membershipPlan === "vip"
-            ? "VIP discovery active · passed profiles can return immediately"
-            : `Advanced filters active · passes return after ${passRecycleHours}h`}
+            ? "VIP filters"
+            : "Advanced filters"}
       </button>
 
       <div className="relative mt-3 min-h-0 flex-1">

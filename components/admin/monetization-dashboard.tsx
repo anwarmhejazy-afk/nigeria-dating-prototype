@@ -162,21 +162,46 @@ export function MonetizationDashboard({
   return (
     <main className="min-h-screen bg-[#07080b] text-white">
       <header className="border-b border-white/[0.08] bg-[#090b10]/95">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 sm:px-6">
-          <BrandLogo size="sm" />
-          <div className="h-8 w-px bg-white/10" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-black">Monetisation & Memberships</p>
-            <p className="text-[11px] text-white/35">
-              PayPal Live, pricing and access controls
-            </p>
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <BrandLogo size="sm" />
+
+            <div className="hidden h-8 w-px bg-white/10 sm:block" />
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black sm:text-base">
+                Monetisation & Memberships
+              </p>
+              <p className="mt-0.5 text-[10px] text-white/35 sm:text-[11px]">
+                PayPal Live, pricing and access controls
+              </p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 text-right">
-            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">Signed in as</p>
-            <p className="mt-0.5 text-xs font-black text-[#FFE58C]">{currentAdminName}</p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4">
+            <div className="min-w-0 flex-1 rounded-xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] px-3 py-2 sm:flex-none">
+              <p className="text-[8px] font-black uppercase tracking-[0.16em] text-white/35">
+                Signed in as
+              </p>
+              <p className="mt-0.5 truncate text-[11px] font-black text-[#FFE58C]">
+                {currentAdminName}
+              </p>
+            </div>
+
+            <a
+              href="/admin"
+              className="rounded-full border border-white/10 px-3 py-2 text-[10px] font-black text-white/55 sm:px-4 sm:text-xs"
+            >
+              Safety admin
+            </a>
+
+            <a
+              href="/premium"
+              className="rounded-full bg-[#F2C94C] px-3 py-2 text-[10px] font-black text-black sm:px-4 sm:text-xs"
+            >
+              Member pricing
+            </a>
           </div>
-          <a href="/admin" className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55">Safety admin</a>
-          <a href="/premium" className="rounded-full bg-[#F2C94C] px-4 py-2 text-xs font-black text-black">Member pricing</a>
         </div>
       </header>
 
