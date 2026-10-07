@@ -3083,7 +3083,7 @@ function DetailsOverlay({
 
           <button
             onClick={like}
-            className="flex flex-[1.45] items-center justify-center gap-2 rounded-2xl border border-[#F2C94C]/35 bg-[#F2C94C]/[0.08] py-2.5 text-xs font-black text-[#FFE58C]"
+            className="flex flex-[1.35] items-center justify-center gap-2 rounded-2xl border border-[#F2C94C]/35 bg-[#F2C94C]/[0.08] py-2.5 text-xs font-black text-[#FFE58C]"
           >
             <DatingIcon
               name="heart"
@@ -3095,7 +3095,7 @@ function DetailsOverlay({
 
         <button
           onClick={sendMessage}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-2.5 text-xs font-black text-black"
+          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-2.5 text-xs font-black text-black"
         >
           <DatingIcon
             name="send"
