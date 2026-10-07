@@ -1709,7 +1709,9 @@ function DiscoverScreen({
         <DatingIcon name={membershipPlan === "free" ? "crown" : "filter"} className="h-4 w-4" />
         {membershipPlan === "free"
           ? "Upgrade for unlimited likes, filters and rewind"
-          : `Advanced filters active · passes return after ${passRecycleHours}h`}
+          : membershipPlan === "vip"
+            ? "VIP discovery active · passed profiles can return immediately"
+            : `Advanced filters active · passes return after ${passRecycleHours}h`}
       </button>
 
       <div className="relative mt-3 min-h-0 flex-1">

@@ -31,6 +31,25 @@ function formattedDate(value: string) {
   }).format(date);
 }
 
+function ProfileDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3">
+      <p className="text-[9px] font-black uppercase tracking-wider text-white/30">
+        {label}
+      </p>
+      <p className="mt-1 text-xs font-bold text-white/70">
+        {value || "Not specified"}
+      </p>
+    </div>
+  );
+}
+
 function HistoryPhoto({ profile }: { profile: DiscoveryProfile }) {
   const source = profile.photos[0] || profile.avatarUrl;
 
@@ -61,8 +80,15 @@ function HistoryPhoto({ profile }: { profile: DiscoveryProfile }) {
   );
 }
 
-export function HistoryScreen({ entries }: { entries: HistoryEntry[] }) {
+export function HistoryScreen({
+  entries,
+  isVip,
+}: {
+  entries: HistoryEntry[];
+  isVip: boolean;
+}) {
   const [tab, setTab] = useState<HistoryTab>("liked");
+  const [selected, setSelected] = useState<DiscoveryProfile | null>(null);
 
   const liked = useMemo(
     () => entries.filter((entry) => entry.action === "like" || entry.action === "super_like"),
@@ -128,9 +154,18 @@ export function HistoryScreen({ entries }: { entries: HistoryEntry[] }) {
           {visible.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {visible.map((entry) => (
-                <article
+                <button
+                  type="button"
                   key={`${entry.profile.id}-${entry.action}`}
-                  className="overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.025]"
+                  onClick={() => {
+                    if (isVip) setSelected(entry.profile);
+                  }}
+                  className="overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.025] text-left transition hover:border-[#F2C94C]/35"
+                  aria-label={
+                    isVip
+                      ? `Open ${entry.profile.displayName}'s full profile`
+                      : "Full profile viewing requires VIP"
+                  }
                 >
                   <div className="relative aspect-[4/5] overflow-hidden bg-[#171a20]">
                     <HistoryPhoto profile={entry.profile} />
@@ -171,7 +206,7 @@ export function HistoryScreen({ entries }: { entries: HistoryEntry[] }) {
                       {formattedDate(entry.updatedAt)}
                     </p>
                   </div>
-                </article>
+                </button>
               ))}
             </div>
           ) : (
@@ -196,6 +231,115 @@ export function HistoryScreen({ entries }: { entries: HistoryEntry[] }) {
             </div>
           )}
         </section>
+
+        {!isVip && entries.length > 0 && (
+          <div className="mx-5 mb-8 rounded-2xl border border-[#F2C94C]/20 bg-[#F2C94C]/[0.06] p-4 text-center">
+            <p className="text-xs font-bold text-[#FFE58C]">
+              Full profile viewing from History is available to VIP members.
+            </p>
+          </div>
+        )}
+
+        {selected && isVip && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90 px-4 py-6 backdrop-blur-md">
+            <div className="mx-auto w-full max-w-[520px] overflow-hidden rounded-[30px] border border-white/10 bg-[#111318] shadow-2xl">
+              <div className="relative h-[460px] bg-[#171a20]">
+                <HistoryPhoto profile={selected} />
+
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-xl font-black text-white"
+                  aria-label="Close full profile"
+                >
+                  ×
+                </button>
+
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/55 to-transparent px-5 pb-5 pt-24">
+                  <h2 className="text-3xl font-black">
+                    {profileTitle(selected)}
+                  </h2>
+                  <p className="mt-1 text-sm font-bold text-[#FFE58C]">
+                    {[selected.city, selected.country].filter(Boolean).join(", ")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5 p-5">
+                <section>
+                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[#F2C94C]">
+                    About
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/70">
+                    {selected.bio}
+                  </p>
+                </section>
+
+                <section>
+                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[#F2C94C]">
+                    Looking for
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/70">
+                    {selected.lookingFor}
+                  </p>
+                </section>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <ProfileDetail label="Relationship goal" value={selected.relationshipGoal} />
+                  <ProfileDetail label="Occupation" value={selected.occupation} />
+                  <ProfileDetail label="Education" value={selected.education} />
+                  <ProfileDetail label="Religion" value={selected.religion} />
+                  <ProfileDetail label="Height" value={selected.height} />
+                  <ProfileDetail label="Lifestyle" value={selected.lifestyle} />
+                </div>
+
+                {selected.languages.length > 0 && (
+                  <section>
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/35">
+                      Languages
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selected.languages.map((language) => (
+                        <span
+                          key={language}
+                          className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/65"
+                        >
+                          {language}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {selected.interests.length > 0 && (
+                  <section>
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/35">
+                      Interests
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selected.interests.map((interest) => (
+                        <span
+                          key={interest}
+                          className="rounded-full border border-[#F2C94C]/20 bg-[#F2C94C]/[0.07] px-3 py-1.5 text-xs font-bold text-[#FFE58C]"
+                        >
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="w-full rounded-2xl bg-[#F2C94C] py-3.5 text-sm font-black text-black"
+                >
+                  Close profile
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getMembershipSnapshot } from "@/lib/membership";
 import { profiles as showcaseData } from "@/app/data";
 import {
   calculateAge,
@@ -391,6 +392,8 @@ export async function loadMatchingInitialData(
       supabase.rpc("get_discovery_configuration"),
     ]);
 
+  const membership = await getMembershipSnapshot(supabase);
+
   const passRecycleHours = Math.max(
     1,
     Number((settingsResult.data as { passRecycleHours?: number } | null)?.passRecycleHours || 24),
@@ -402,6 +405,10 @@ export async function loadMatchingInitialData(
         const action = String(row.action || "");
         if (action === "like" || action === "super_like") return true;
         if (action !== "pass") return false;
+
+        // VIP members do not wait for passed profiles to recycle.
+        if (membership.plan === "vip") return false;
+
         const updatedAt = new Date(String(row.updated_at || "")).getTime();
         return Number.isFinite(updatedAt) && updatedAt >= passCutoff;
       })

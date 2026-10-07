@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { HistoryScreen, type HistoryEntry } from "@/components/dating/history-screen";
 import { toDiscoveryProfile } from "@/lib/matching";
+import { getMembershipSnapshot } from "@/lib/membership";
 import { toMemberProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,8 @@ export default async function HistoryPage() {
   const currentProfile = toMemberProfile(
     currentProfileData as Record<string, unknown>,
   );
+
+  const membership = await getMembershipSnapshot(supabase);
 
   const { data: interactionData, error: interactionError } = await supabase
     .from("interactions")
@@ -83,5 +86,10 @@ export default async function HistoryPage() {
     ];
   });
 
-  return <HistoryScreen entries={entries} />;
+  return (
+    <HistoryScreen
+      entries={entries}
+      isVip={membership.plan === "vip"}
+    />
+  );
 }
