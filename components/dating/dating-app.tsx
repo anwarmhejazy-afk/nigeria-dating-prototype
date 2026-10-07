@@ -3069,41 +3069,43 @@ function DetailsOverlay({
             />
             Safety and reporting
           </button>
+
+          <div className="mt-6 border-t border-white/[0.07] pt-5 pb-[max(16px,env(safe-area-inset-bottom))]">
+            <div className="flex gap-2.5">
+              <button
+                onClick={close}
+                className="flex-1 rounded-2xl border border-white/10 py-2.5 text-xs font-black text-white/55"
+              >
+                Not now
+              </button>
+
+              <button
+                onClick={like}
+                className="flex flex-[1.35] items-center justify-center gap-2 rounded-2xl border border-[#F2C94C]/35 bg-[#F2C94C]/[0.08] py-2.5 text-xs font-black text-[#FFE58C]"
+              >
+                <DatingIcon
+                  name="heart"
+                  className="h-4 w-4"
+                />
+                Like to Connect
+              </button>
+            </div>
+
+            <button
+              onClick={sendMessage}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-2.5 text-xs font-black text-black"
+            >
+              <DatingIcon
+                name="send"
+                className="h-4 w-4"
+              />
+              Send a Message
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/[0.07] bg-[#0b0d12]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
-        <div className="flex gap-2.5">
-          <button
-            onClick={close}
-            className="flex-1 rounded-2xl border border-white/10 py-2.5 text-xs font-black text-white/55"
-          >
-            Not now
-          </button>
 
-          <button
-            onClick={like}
-            className="flex flex-[1.35] items-center justify-center gap-2 rounded-2xl border border-[#F2C94C]/35 bg-[#F2C94C]/[0.08] py-2.5 text-xs font-black text-[#FFE58C]"
-          >
-            <DatingIcon
-              name="heart"
-              className="h-4 w-4"
-            />
-            Like to Connect
-          </button>
-        </div>
-
-        <button
-          onClick={sendMessage}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-2 text-xs font-black text-black"
-        >
-          <DatingIcon
-            name="send"
-            className="h-4 w-4"
-          />
-          Send a Message
-        </button>
-      </div>
     </OverlayShell>
   );
 }
