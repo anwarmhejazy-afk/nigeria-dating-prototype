@@ -3072,7 +3072,7 @@ function DetailsOverlay({
         </div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/[0.07] bg-[#0b0d12]/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-xl">
+      <div className="absolute inset-x-0 bottom-0 border-t border-white/[0.07] bg-[#0b0d12]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
         <div className="flex gap-2.5">
           <button
             onClick={close}
@@ -3095,7 +3095,7 @@ function DetailsOverlay({
 
         <button
           onClick={sendMessage}
-          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-2.5 text-xs font-black text-black"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2C94C] py-2 text-xs font-black text-black"
         >
           <DatingIcon
             name="send"
