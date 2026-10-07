@@ -248,6 +248,8 @@ export function DatingApp({
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerMovedRef = useRef(false);
   const [history, setHistory] = useState<SwipeHistory[]>([]);
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
@@ -813,12 +815,30 @@ export function DatingApp({
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (animating || busyProfileId) return;
+
     event.currentTarget.setPointerCapture(event.pointerId);
+    pointerStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+    };
+    pointerMovedRef.current = false;
     setDragging(true);
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!dragging || animating) return;
+
+    const start = pointerStartRef.current;
+
+    if (start) {
+      const distanceX = Math.abs(event.clientX - start.x);
+      const distanceY = Math.abs(event.clientY - start.y);
+
+      if (distanceX > 8 || distanceY > 8) {
+        pointerMovedRef.current = true;
+      }
+    }
+
     setDrag((previous) => ({
       x: previous.x + event.movementX,
       y: Math.max(-150, Math.min(110, previous.y + event.movementY)),
@@ -827,11 +847,22 @@ export function DatingApp({
 
   const onPointerUp = () => {
     if (!dragging || animating) return;
+
     setDragging(false);
+
+    const wasTap = !pointerMovedRef.current;
+    pointerStartRef.current = null;
+    pointerMovedRef.current = false;
+
     if (drag.x > 105) return swipe("like");
     if (drag.x < -105) return swipe("pass");
     if (drag.y < -100) return swipe("super_like");
+
     setDrag({ x: 0, y: 0 });
+
+    if (wasTap && current) {
+      openMemberDetails(current);
+    }
   };
 
   const undoSwipe = async () => {
@@ -1807,7 +1838,6 @@ function DiscoverScreen({
             <button
               onClick={(event) => {
                 event.stopPropagation();
-                openDetails(current);
               }}
               className="absolute inset-x-0 bottom-0 p-5 text-left"
             >
