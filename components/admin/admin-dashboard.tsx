@@ -603,7 +603,7 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
         throw new Error((result.error || "Unable to send reminder.") + retry);
       }
       if (result.auditWarning) throw new Error(result.message);
-    }, "Reminder email accepted for sending. Inbox delivery is not confirmed.");
+    }, "Reminder email submitted successfully. Delivery status is pending.");
   };
   const resetDiscovery = () => {
     if (
@@ -635,7 +635,26 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
   };
   return (
     <tr className="border-t border-white/[0.06] text-sm">
-      <td className="p-4"><div className="flex items-center gap-3"><Avatar member={member} /><div><p className="font-black">{member.displayName}</p><p className="mt-1 text-[10px] text-white/35">{member.email}</p></div></div></td>
+      <td className="p-4">
+        <div className="flex items-center gap-3">
+          <Avatar member={member} />
+          <div>
+            <p className="font-black">{member.displayName}</p>
+            <p className="mt-1 text-[10px] text-white/35">{member.email}</p>
+            {member.latestReminderStatus && (
+              <p className="mt-1 text-[10px] font-bold text-[#FFE58C]">
+                Reminder: {member.latestReminderStatus.charAt(0).toUpperCase() + member.latestReminderStatus.slice(1)}
+                {member.latestReminderUpdatedAt && (
+                  <>
+                    <span> · </span>
+                    {formatDate(member.latestReminderUpdatedAt)}
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+      </td>
       <td className="p-4 text-xs text-white/50">{member.city || "—"}, {member.country}</td>
       <td className="p-4"><StatusBadge value={member.accountStatus} /></td>
       

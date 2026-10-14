@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AdminProfile = {
   id: string;
@@ -14,6 +15,9 @@ export type AdminProfile = {
   suspendedUntil: string | null;
   moderationNote: string | null;
   createdAt: string;
+  latestReminderStatus: string | null;
+  latestReminderRequestedAt: string | null;
+  latestReminderUpdatedAt: string | null;
 };
 
 export type ReportEvidenceItem = {
@@ -133,6 +137,9 @@ function toAdminProfile(row: Row | undefined): AdminProfile | null {
     suspendedUntil: nullableText(row.suspended_until),
     moderationNote: nullableText(row.moderation_note),
     createdAt: text(row.created_at),
+    latestReminderStatus: null,
+    latestReminderRequestedAt: null,
+    latestReminderUpdatedAt: null,
   };
 }
 
@@ -186,6 +193,9 @@ function snapshotToAdminProfile(
     moderationNote:
       "Account permanently deleted.",
     createdAt: text(snapshot.created_at),
+    latestReminderStatus: null,
+    latestReminderRequestedAt: null,
+    latestReminderUpdatedAt: null,
   };
 }
 
@@ -264,6 +274,64 @@ export async function loadAdminDashboard(
   const profiles = allProfiles.filter(
     (profile) => !activeStaffIds.has(profile.id),
   );
+
+  /*
+   * Delivery tracking is service-role only. Normal authenticated users
+   * never receive direct access to profile_reminder_attempts.
+   */
+  try {
+    const service = createAdminClient() as any;
+
+    const { data: reminderRows, error: reminderError } = await service
+      .from("profile_reminder_attempts")
+      .select(
+        "member_id,delivery_status,requested_at,last_delivery_event_at",
+      )
+      .order("requested_at", { ascending: false })
+      .limit(2000);
+
+    if (reminderError) {
+      console.error(
+        "Unable to load profile reminder delivery statuses",
+        reminderError.code,
+      );
+    } else {
+      const latestReminderByMember = new Map<string, Row>();
+
+      for (const row of (reminderRows || []) as Row[]) {
+        const memberId = text(row.member_id);
+
+        if (
+          memberId &&
+          !latestReminderByMember.has(memberId)
+        ) {
+          latestReminderByMember.set(memberId, row);
+        }
+      }
+
+      for (const profile of profiles) {
+        const reminder =
+          latestReminderByMember.get(profile.id);
+
+        if (!reminder) continue;
+
+        profile.latestReminderStatus =
+          nullableText(reminder.delivery_status);
+
+        profile.latestReminderRequestedAt =
+          nullableText(reminder.requested_at);
+
+        profile.latestReminderUpdatedAt =
+          nullableText(reminder.last_delivery_event_at) ||
+          nullableText(reminder.requested_at);
+      }
+    }
+  } catch (error) {
+    console.error(
+      "Unable to load profile reminder delivery tracking",
+      error instanceof Error ? error.message : error,
+    );
+  }
 
   const profileMap = new Map(
     allProfiles.map((profile) => [
