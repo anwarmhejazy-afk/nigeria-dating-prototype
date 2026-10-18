@@ -174,11 +174,13 @@ export function ProfileEditor({
 
   const initiallySavedPhotosRef = useRef<Set<string>>(
     new Set(
-      initialProfile?.photo_urls?.length
-        ? initialProfile.photo_urls
-        : initialProfile?.avatar_url
-          ? [initialProfile.avatar_url]
-          : [],
+      (initialProfile?.photo_urls ?? []).filter(
+        (url) =>
+          typeof url === "string" &&
+          url.includes(
+            "/storage/v1/object/public/profile-photos/",
+          ),
+      ),
     ),
   );
 
@@ -189,9 +191,18 @@ export function ProfileEditor({
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(() => initialForm(initialProfile));
   const [photos, setPhotos] = useState<string[]>(() => {
-    const profilePhotos = initialProfile?.photo_urls ?? [];
-    if (profilePhotos.length) return profilePhotos;
-    return initialProfile?.avatar_url ? [initialProfile.avatar_url] : [];
+    /*
+     * Only images deliberately uploaded to AfroLove count as
+     * dating-profile photos. Google/OAuth account avatars must
+     * never satisfy the profile-photo requirement.
+     */
+    return (initialProfile?.photo_urls ?? []).filter(
+      (url) =>
+        typeof url === "string" &&
+        url.includes(
+          "/storage/v1/object/public/profile-photos/",
+        ),
+    );
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -296,6 +307,40 @@ export function ProfileEditor({
         }
         if (file.size > 5 * 1024 * 1024) {
           throw new Error("Each photo must be smaller than 5MB.");
+        }
+
+        /*
+         * Basic profile-photo quality protection.
+         *
+         * Tiny thumbnails such as 96x96 Google account avatars
+         * are not acceptable dating-profile photos.
+         */
+        const bitmap = await createImageBitmap(file);
+        const imageWidth = bitmap.width;
+        const imageHeight = bitmap.height;
+        bitmap.close();
+
+        if (imageWidth < 600 || imageHeight < 600) {
+          throw new Error(
+            "Profile photos must be at least 600 × 600 pixels.",
+          );
+        }
+
+        /*
+         * The first image is the member's primary dating photo.
+         * Reject excessively wide images such as torso/banner crops.
+         * Normal portrait, square and ordinary 4:3 photos remain valid.
+         */
+        const isPrimaryUpload =
+          photos.length === 0 && uploadedUrls.length === 0;
+
+        if (
+          isPrimaryUpload &&
+          imageWidth / imageHeight > 1.5
+        ) {
+          throw new Error(
+            "Your primary photo must be a portrait or normal photo showing you clearly. Please choose another photo.",
+          );
         }
 
         const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";

@@ -120,6 +120,9 @@ export default async function AdminMemberProfilePage({
     );
   }
 
+  const profilePhotoMarker =
+    "/storage/v1/object/public/profile-photos/";
+
   const photos = Array.from(
     new Set(
       [
@@ -130,7 +133,8 @@ export default async function AdminMemberProfilePage({
       ].filter(
         (item): item is string =>
           typeof item === "string" &&
-          item.trim().length > 0,
+          item.trim().length > 0 &&
+          item.includes(profilePhotoMarker),
       ),
     ),
   );
@@ -176,7 +180,8 @@ export default async function AdminMemberProfilePage({
 
             <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full bg-[#F2C94C] text-black">
 
-              {profile.avatar_url ? (
+              {typeof profile.avatar_url === "string" &&
+              profile.avatar_url.includes(profilePhotoMarker) ? (
                 <Image
                   src={profile.avatar_url}
                   alt={profile.display_name || "Member"}
