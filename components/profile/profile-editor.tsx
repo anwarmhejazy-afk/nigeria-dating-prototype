@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import {
   calculateAge,
@@ -208,6 +208,32 @@ export function ProfileEditor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  /*
+   * Explain why an incomplete member has been returned to onboarding.
+   *
+   * Verification approval is independent from profile completion.
+   * A member may remain verified while still being required to upload
+   * a valid AfroLove dating-profile photo.
+   */
+  useEffect(() => {
+    if (
+      mode !== "onboarding" ||
+      !initialProfile ||
+      initialProfile.onboarding_completed ||
+      photos.length > 0
+    ) {
+      return;
+    }
+
+    setError(
+      "Your profile needs attention. A valid profile photo is required before your profile can be completed. Please upload a clear, appropriate photo showing you, then complete your profile."
+    );
+  }, [
+    mode,
+    initialProfile,
+    photos.length,
+  ]);
 
   const languages = normaliseList(form.languagesText);
   const completion = calculateProfileCompletion({
