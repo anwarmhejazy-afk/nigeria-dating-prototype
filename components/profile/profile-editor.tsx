@@ -171,6 +171,21 @@ export function ProfileEditor({
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const initiallySavedPhotosRef = useRef<Set<string>>(
+    new Set(
+      initialProfile?.photo_urls?.length
+        ? initialProfile.photo_urls
+        : initialProfile?.avatar_url
+          ? [initialProfile.avatar_url]
+          : [],
+    ),
+  );
+
+  const pendingPhotoDeletionsRef = useRef<Set<string>>(
+    new Set(),
+  );
+
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(() => initialForm(initialProfile));
   const [photos, setPhotos] = useState<string[]>(() => {
@@ -309,12 +324,47 @@ export function ProfileEditor({
   };
 
   const removePhoto = async (url: string) => {
-    setPhotos((previous) => previous.filter((photo) => photo !== url));
-    const marker = "/storage/v1/object/public/profile-photos/";
+    setPhotos((previous) =>
+      previous.filter((photo) => photo !== url),
+    );
+
+    const marker =
+      "/storage/v1/object/public/profile-photos/";
+
     const index = url.indexOf(marker);
-    if (index >= 0) {
-      const path = decodeURIComponent(url.slice(index + marker.length));
-      await supabase.storage.from("profile-photos").remove([path]);
+
+    if (index < 0) {
+      return;
+    }
+
+    /*
+     * Never delete a photo that the database still references.
+     *
+     * Existing saved photos are queued and deleted only after the
+     * profile update succeeds. This prevents broken photo URLs when
+     * the member removes a picture but leaves the page or saving fails.
+     *
+     * A photo uploaded during this editing session but never saved may
+     * be removed immediately because the database does not reference it.
+     */
+    if (initiallySavedPhotosRef.current.has(url)) {
+      pendingPhotoDeletionsRef.current.add(url);
+      return;
+    }
+
+    const storagePath = decodeURIComponent(
+      url.slice(index + marker.length),
+    );
+
+    const { error: removeError } = await supabase.storage
+      .from("profile-photos")
+      .remove([storagePath]);
+
+    if (removeError) {
+      console.warn(
+        "AfroLove unsaved photo cleanup warning:",
+        removeError.message,
+      );
     }
   };
 
@@ -415,6 +465,62 @@ export function ProfileEditor({
           "The profile was not returned after saving. Please retry.",
         );
       }
+
+      /*
+       * The database now contains the new photo list, so it is safe
+       * to delete previously saved photos that the member removed.
+       * A cleanup failure must not undo a successfully saved profile;
+       * it only leaves an unused Storage object behind.
+       */
+      const pendingPhotoDeletions = Array.from(
+        pendingPhotoDeletionsRef.current,
+      );
+
+      const marker =
+        "/storage/v1/object/public/profile-photos/";
+
+      for (const url of pendingPhotoDeletions) {
+        /*
+         * Defensive check: never delete a photo that is still present
+         * in the newly saved photo list.
+         */
+        if (photos.includes(url)) {
+          pendingPhotoDeletionsRef.current.delete(url);
+          continue;
+        }
+
+        const index = url.indexOf(marker);
+
+        if (index < 0) {
+          pendingPhotoDeletionsRef.current.delete(url);
+          continue;
+        }
+
+        const storagePath = decodeURIComponent(
+          url.slice(index + marker.length),
+        );
+
+        const { error: removeError } = await supabase.storage
+          .from("profile-photos")
+          .remove([storagePath]);
+
+        if (removeError) {
+          console.warn(
+            "AfroLove saved photo cleanup warning:",
+            removeError.message,
+          );
+          continue;
+        }
+
+        pendingPhotoDeletionsRef.current.delete(url);
+        initiallySavedPhotosRef.current.delete(url);
+      }
+
+      /*
+       * The photos in this successful save are now the database's
+       * current saved photo set.
+       */
+      initiallySavedPhotosRef.current = new Set(photos);
 
       /*
        * Authentication metadata is helpful for headers and emails,
