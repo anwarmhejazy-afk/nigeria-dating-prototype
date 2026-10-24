@@ -5,8 +5,8 @@ import { useState } from "react";
 type Plan = "premium" | "vip";
 
 const paypalAmounts: Record<Plan, string> = {
-  premium: "£3.50",
-  vip: "£7.50",
+  premium: "£1.95",
+  vip: "£4.15",
 };
 
 const nairaAmounts: Record<Plan, string> = {

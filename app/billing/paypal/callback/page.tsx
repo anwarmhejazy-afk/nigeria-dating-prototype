@@ -64,7 +64,7 @@ function expectedPlanId(plan: Plan) {
 }
 
 function planAmountMinor(plan: Plan) {
-  return plan === "vip" ? 750 : 350;
+  return plan === "vip" ? 415 : 195;
 }
 
 export default async function PayPalCallbackPage({
