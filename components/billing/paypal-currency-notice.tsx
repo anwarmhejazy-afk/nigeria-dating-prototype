@@ -54,13 +54,24 @@ export function PayPalCurrencyNotice({
               </p>
             </div>
 
-            <p className="mt-5 text-sm leading-6 text-white/60">
-              PayPal will process this international subscription in{" "}
-              <strong className="text-white">{paypalAmounts[plan]} GBP/month</strong>{" "}
-              because NGN recurring payments are not supported for this PayPal
-              checkout. Your bank or card provider may apply its own exchange rate
-              or conversion fee.
-            </p>
+            <div className="mt-5">
+              <p className="text-sm font-semibold text-white/80">
+                PayPal checkout amount:{" "}
+                <strong className="text-white">
+                  {paypalAmounts[plan]} GBP/month
+                </strong>
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-white/60">
+                PayPal processes this international subscription in GBP. Your
+                AfroLove {plan === "vip" ? "VIP" : "Premium"} price remains{" "}
+                <strong className="text-white">
+                  {nairaAmounts[plan]}/month
+                </strong>
+                . Your bank or card provider may apply its own exchange rate or
+                conversion fee.
+              </p>
+            </div>
 
             <p className="mt-3 text-xs leading-5 text-white/40">
               You will be redirected securely to PayPal and returned to AfroLove
