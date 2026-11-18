@@ -1,3 +1,4 @@
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -133,37 +134,71 @@ export async function GET() {
       : null;
 
     let profile = null;
+    let authUser = null;
     let dbSubscription = null;
     let transactions: unknown[] = [];
 
     if (userId) {
-      const [profileResult, subscriptionResult, transactionResult] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select(
-              "id,email,display_name,onboarding_completed,account_status,is_verified",
-            )
-            .eq("id", userId)
-            .maybeSingle(),
+      const serviceUrl =
+        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "";
+      const serviceKey =
+        process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
 
-          supabase
-            .from("member_subscriptions")
-            .select(
-              "id,user_id,plan_slug,status,provider,provider_subscription_id,current_period_start,current_period_end,is_test",
-            )
-            .eq("provider_subscription_id", SUBSCRIPTION_ID)
-            .maybeSingle(),
+      if (!serviceUrl || !serviceKey) {
+        throw new Error("Supabase service credentials are missing.");
+      }
 
-          supabase
-            .from("payment_transactions")
-            .select(
-              "id,user_id,subscription_id,plan_slug,amount_minor,currency,status,created_at,paid_at",
-            )
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(10),
-        ]);
+      const admin = createAdminClient(serviceUrl, serviceKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      });
+
+      const [
+        authResult,
+        profileResult,
+        subscriptionResult,
+        transactionResult,
+      ] = await Promise.all([
+        admin.auth.admin.getUserById(userId),
+
+        admin
+          .from("profiles")
+          .select(
+            "id,email,display_name,onboarding_completed,account_status,is_verified,created_at",
+          )
+          .eq("id", userId)
+          .maybeSingle(),
+
+        admin
+          .from("member_subscriptions")
+          .select(
+            "id,user_id,plan_slug,status,provider,provider_subscription_id,current_period_start,current_period_end,is_test",
+          )
+          .eq("provider_subscription_id", SUBSCRIPTION_ID)
+          .maybeSingle(),
+
+        admin
+          .from("payment_transactions")
+          .select(
+            "id,user_id,subscription_id,plan_slug,amount_minor,currency,status,created_at,paid_at",
+          )
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+
+      if (authResult.data?.user) {
+        authUser = {
+          id: authResult.data.user.id,
+          email: authResult.data.user.email || null,
+          createdAt: authResult.data.user.created_at || null,
+          lastSignInAt: authResult.data.user.last_sign_in_at || null,
+          providers:
+            authResult.data.user.app_metadata?.providers || [],
+        };
+      }
 
       profile = profileResult.data || null;
       dbSubscription = subscriptionResult.data || null;
@@ -209,6 +244,7 @@ export async function GET() {
         afroLoveLink: {
           userId: userId || null,
           plan: plan || null,
+          authUser,
           profile,
           databaseSubscription: dbSubscription,
           paymentTransactions: transactions,
