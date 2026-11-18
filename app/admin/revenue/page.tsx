@@ -8,7 +8,7 @@ const OWNER_SHARE = 0.5;
 
 type Transaction = {
   id: string;
-  user_id: string;
+  user_id: string | null;
   plan_slug: string;
   amount_minor: number;
   currency: string;
@@ -74,7 +74,13 @@ export default async function RevenuePage() {
 
   const transactions = (transactionsData || []) as Transaction[];
 
-  const userIds = [...new Set(transactions.map((item) => item.user_id))];
+  const userIds = [
+    ...new Set(
+      transactions
+        .map((item) => item.user_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 
   let members: Member[] = [];
 
@@ -214,7 +220,9 @@ export default async function RevenuePage() {
 
                 <tbody>
                   {transactions.map((transaction) => {
-                    const member = memberMap.get(transaction.user_id);
+                    const member = transaction.user_id
+                      ? memberMap.get(transaction.user_id)
+                      : undefined;
                     const date =
                       transaction.paid_at || transaction.created_at;
 
@@ -225,11 +233,15 @@ export default async function RevenuePage() {
                       >
                         <td className="px-5 py-4">
                           <p className="font-black">
-                            {member?.display_name || "Unknown member"}
+                            {transaction.user_id
+                              ? member?.display_name || "Unknown member"
+                              : "Deleted member"}
                           </p>
 
                           <p className="mt-1 text-xs text-white/35">
-                            {member?.email || "Email unavailable"}
+                            {transaction.user_id
+                              ? member?.email || "Email unavailable"
+                              : "Historical PayPal payment"}
                           </p>
                         </td>
 

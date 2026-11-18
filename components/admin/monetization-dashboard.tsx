@@ -63,13 +63,34 @@ export function MonetizationDashboard({
     () => new Map(members.map((member) => [member.id, member])),
     [members],
   );
-  const revenueMinor = useMemo(
+  const revenueByCurrency = useMemo(
     () =>
       transactions
         .filter((item) => item.status === "successful")
-        .reduce((sum, item) => sum + item.amount_minor, 0),
+        .reduce<Record<string, number>>((totals, item) => {
+          const currency = item.currency.toUpperCase();
+
+          totals[currency] =
+            (totals[currency] || 0) + item.amount_minor;
+
+          return totals;
+        }, {}),
     [transactions],
   );
+
+  const revenueDisplay = useMemo(() => {
+    const entries = Object.entries(revenueByCurrency);
+
+    if (!entries.length) {
+      return formatMoney(0, settings.currency);
+    }
+
+    return entries
+      .map(([currency, total]) =>
+        formatMoney(total, currency),
+      )
+      .join(" · ");
+  }, [revenueByCurrency, settings.currency]);
   const activeSubscriptions = visibleSubscriptions.filter((item) =>
     ["active", "trialing"].includes(item.status),
   );
@@ -210,7 +231,7 @@ export function MonetizationDashboard({
           <Metric label="Active memberships" value={activeSubscriptions.length.toLocaleString()} hint="Premium and VIP members" />
           <Metric label="Premium" value={activeSubscriptions.filter((item) => item.plan_slug === "premium").length.toLocaleString()} hint="Active or trialing" />
           <Metric label="VIP" value={activeSubscriptions.filter((item) => item.plan_slug === "vip").length.toLocaleString()} hint="Priority members" />
-          <Metric label="Confirmed revenue" value={formatMoney(revenueMinor, settings.currency)} hint="Successful transactions only" />
+          <Metric label="Confirmed revenue" value={revenueDisplay} hint="Successful transactions by currency" />
         </div>
 
         {!paypalConfigured && (
