@@ -214,6 +214,24 @@ async function syncSubscription(
   const { userId, plan } = parseSubscriptionOwner(subscription);
   const admin = adminClient();
 
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError) throw profileError;
+
+  if (!profile) {
+    return {
+      subscriptionRowId: null,
+      userId,
+      plan,
+      subscription,
+      orphaned: true,
+    };
+  }
+
   const status =
     forcedStatus ||
     mappedSubscriptionStatus(String(subscription?.status || "")) ||
@@ -258,7 +276,13 @@ async function syncSubscription(
 
     if (error) throw error;
 
-    return { subscriptionRowId: existing.id, userId, plan, subscription };
+    return {
+      subscriptionRowId: existing.id,
+      userId,
+      plan,
+      subscription,
+      orphaned: false,
+    };
   }
 
   if (["active", "past_due", "pending"].includes(status)) {
@@ -301,6 +325,7 @@ async function syncSubscription(
     userId,
     plan,
     subscription,
+    orphaned: false,
   };
 }
 
@@ -339,7 +364,7 @@ async function recordCompletedSale(
       : "GBP";
 
   const { error: txError } = await admin.from("payment_transactions").insert({
-    user_id: synced.userId,
+    user_id: synced.orphaned ? null : synced.userId,
     subscription_id: synced.subscriptionRowId,
     tx_ref: txRef,
     provider_transaction_id: providerTransactionId,
@@ -351,6 +376,7 @@ async function recordCompletedSale(
       provider: "paypal",
       mode: "main_account_only",
       subaccounts: [],
+      orphaned_subscription: synced.orphaned,
     },
     provider_payload: resource,
     paid_at:
