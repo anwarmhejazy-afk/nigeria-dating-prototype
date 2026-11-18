@@ -218,6 +218,39 @@ export async function deleteAfroLoveAccount({
     );
   }
 
+  const {
+    data: activeMembership,
+    error: membershipError,
+  } = await admin
+    .from("member_subscriptions")
+    .select(
+      "id,plan_slug,status,provider,provider_subscription_id,current_period_end,cancel_at_period_end",
+    )
+    .eq("user_id", userId)
+    .in("status", [
+      "pending",
+      "trialing",
+      "active",
+      "past_due",
+    ])
+    .order("created_at", {
+      ascending: false,
+    })
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw new Error(
+      "Unable to verify the member's subscription before account deletion.",
+    );
+  }
+
+  if (activeMembership) {
+    throw new Error(
+      "This account has a current membership and cannot be permanently deleted yet. Resolve or complete the membership first so billing and payment history remain protected.",
+    );
+  }
+
   const [
     profilePhotoPaths,
     avatarPaths,
