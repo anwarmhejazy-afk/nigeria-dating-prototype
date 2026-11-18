@@ -12,7 +12,7 @@ export default async function AdminMonetizationPage() {
       supabase.auth.getUser(),
     supabase.from("monetization_settings").select("*").eq("singleton", true).single(),
     supabase.from("profiles").select("id,display_name,email").eq("onboarding_completed", true).order("display_name").limit(300),
-    supabase.from("member_subscriptions").select("id,user_id,plan_slug,status,current_period_end,is_test").order("created_at", { ascending: false }).limit(500),
+    supabase.from("member_subscriptions").select("id,user_id,plan_slug,status,current_period_end,is_test,customer_email,provider,provider_subscription_id,metadata").order("created_at", { ascending: false }).limit(500),
     supabase.from("payment_transactions").select("id,plan_slug,amount_minor,currency,status,created_at").order("created_at", { ascending: false }).limit(500),
   ]);
 

@@ -15,11 +15,15 @@ type Settings = {
 type Member = { id: string; display_name: string; email: string | null };
 type Subscription = {
   id: string;
-  user_id: string;
+  user_id: string | null;
   plan_slug: string;
   status: string;
   current_period_end: string | null;
   is_test: boolean;
+  customer_email: string | null;
+  provider: string;
+  provider_subscription_id: string | null;
+  metadata: Record<string, unknown> | null;
 };
 type Transaction = {
   id: string;
@@ -274,8 +278,71 @@ export function MonetizationDashboard({
           <h2 className="mt-2 text-2xl font-black">Current Premium and VIP members</h2>
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07]">
             {activeSubscriptions.length ? activeSubscriptions.map((subscription) => {
-              const member = memberMap.get(subscription.user_id);
-              return <div key={subscription.id} className="flex flex-wrap items-center gap-3 border-b border-white/[0.06] bg-black/10 p-4 last:border-0"><div className="min-w-0 flex-1"><p className="font-black">{member?.display_name || "Unknown member"}</p><p className="mt-1 text-xs text-white/35">{member?.email || subscription.user_id}</p></div><span className="rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/10 px-3 py-1 text-[10px] font-black uppercase text-[#FFE58C]">{subscription.plan_slug}{subscription.is_test ? " · test" : ""}</span><span className="text-xs text-white/40">{subscription.current_period_end ? `Ends ${new Date(subscription.current_period_end).toLocaleDateString()}` : "No end date"}</span></div>;
+              const member = subscription.user_id
+                ? memberMap.get(subscription.user_id)
+                : undefined;
+
+              const metadata =
+                subscription.metadata || {};
+
+              const payerName =
+                typeof metadata.payer_name === "string"
+                  ? metadata.payer_name
+                  : "";
+
+              const displayName =
+                member?.display_name ||
+                payerName ||
+                "PayPal subscriber";
+
+              const displayEmail =
+                member?.email ||
+                subscription.customer_email ||
+                "Email unavailable";
+
+              const orphaned = !subscription.user_id;
+
+              return (
+                <div
+                  key={subscription.id}
+                  className="flex flex-wrap items-center gap-3 border-b border-white/[0.06] bg-black/10 p-4 last:border-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black">
+                      {displayName}
+                    </p>
+
+                    <p className="mt-1 text-xs text-white/35">
+                      {displayEmail}
+                    </p>
+
+                    {orphaned && (
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.1em] text-amber-300/60">
+                        AfroLove account deleted · PayPal subscription active
+                      </p>
+                    )}
+
+                    {subscription.provider_subscription_id && (
+                      <p className="mt-1 text-[10px] text-white/25">
+                        PayPal: {subscription.provider_subscription_id}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/10 px-3 py-1 text-[10px] font-black uppercase text-[#FFE58C]">
+                    {subscription.plan_slug}
+                    {subscription.is_test ? " · test" : ""}
+                  </span>
+
+                  <span className="text-xs text-white/40">
+                    {subscription.current_period_end
+                      ? `Ends ${new Date(
+                          subscription.current_period_end,
+                        ).toLocaleDateString()}`
+                      : "No end date"}
+                  </span>
+                </div>
+              );
             }) : <div className="p-8 text-center text-sm text-white/35">No active paid memberships.</div>}
           </div>
         </section>

@@ -14,6 +14,7 @@ type Transaction = {
   currency: string;
   status: string;
   provider_transaction_id: string | null;
+  provider_payload: Record<string, unknown> | null;
   paid_at: string | null;
   created_at: string;
 };
@@ -33,6 +34,12 @@ function formatMoney(amountMinor: number, currency: string) {
   } catch {
     return `${currency.toUpperCase()} ${(amountMinor / 100).toFixed(2)}`;
   }
+}
+
+function metadataText(value: unknown) {
+  return typeof value === "string"
+    ? value.trim()
+    : "";
 }
 
 function formatPlan(plan: string) {
@@ -60,7 +67,7 @@ export default async function RevenuePage() {
     await supabase
       .from("payment_transactions")
       .select(
-        "id,user_id,plan_slug,amount_minor,currency,status,provider_transaction_id,paid_at,created_at",
+        "id,user_id,plan_slug,amount_minor,currency,status,provider_transaction_id,provider_payload,paid_at,created_at",
       )
       .eq("status", "successful")
       .order("paid_at", { ascending: false })
@@ -223,6 +230,32 @@ export default async function RevenuePage() {
                     const member = transaction.user_id
                       ? memberMap.get(transaction.user_id)
                       : undefined;
+
+                    const providerPayload =
+                      transaction.provider_payload || {};
+
+                    const payerName =
+                      metadataText(
+                        providerPayload.payer_name,
+                      );
+
+                    const payerEmail =
+                      metadataText(
+                        providerPayload.payer_email,
+                      );
+
+                    const customerName =
+                      member?.display_name ||
+                      payerName ||
+                      (transaction.user_id
+                        ? "Unknown member"
+                        : "Deleted member");
+
+                    const customerEmail =
+                      member?.email ||
+                      payerEmail ||
+                      "Email unavailable";
+
                     const date =
                       transaction.paid_at || transaction.created_at;
 
@@ -233,16 +266,18 @@ export default async function RevenuePage() {
                       >
                         <td className="px-5 py-4">
                           <p className="font-black">
-                            {transaction.user_id
-                              ? member?.display_name || "Unknown member"
-                              : "Deleted member"}
+                            {customerName}
                           </p>
 
                           <p className="mt-1 text-xs text-white/35">
-                            {transaction.user_id
-                              ? member?.email || "Email unavailable"
-                              : "Historical PayPal payment"}
+                            {customerEmail}
                           </p>
+
+                          {!transaction.user_id && (
+                            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.1em] text-amber-300/60">
+                              AfroLove account deleted
+                            </p>
+                          )}
                         </td>
 
                         <td className="px-5 py-4 text-sm font-bold">

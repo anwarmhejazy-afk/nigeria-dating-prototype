@@ -223,6 +223,100 @@ async function syncSubscription(
   if (profileError) throw profileError;
 
   if (!profile) {
+    const orphanStatus =
+      forcedStatus ||
+      mappedSubscriptionStatus(
+        String(subscription?.status || ""),
+      ) ||
+      "active";
+
+    const orphanPeriodStart =
+      subscription?.billing_info?.last_payment?.time ||
+      subscription?.start_time ||
+      new Date().toISOString();
+
+    const orphanPeriodEnd =
+      subscription?.billing_info?.next_billing_time ||
+      subscription?.billing_info?.final_payment_time ||
+      null;
+
+    const {
+      data: existingOrphan,
+      error: orphanLookupError,
+    } = await admin
+      .from("member_subscriptions")
+      .select("id")
+      .eq("provider", "paypal")
+      .eq(
+        "provider_subscription_id",
+        subscriptionId,
+      )
+      .maybeSingle();
+
+    if (orphanLookupError) {
+      throw orphanLookupError;
+    }
+
+    if (existingOrphan?.id) {
+      const { error: orphanUpdateError } =
+        await admin
+          .from("member_subscriptions")
+          .update({
+            plan_slug: plan,
+            status: orphanStatus,
+            provider_plan_id:
+              subscription.plan_id,
+            customer_email:
+              subscription?.subscriber
+                ?.email_address || null,
+            current_period_start:
+              orphanPeriodStart,
+            current_period_end:
+              orphanPeriodEnd,
+            cancel_at_period_end:
+              ["cancelled", "expired"].includes(
+                orphanStatus,
+              ),
+            is_test:
+              process.env.PAYPAL_ENVIRONMENT
+                ?.trim()
+                .toLowerCase() !== "live",
+            metadata: {
+              ...subscription,
+              payer_name:
+                subscription?.subscriber?.name
+                  ? [
+                      subscription.subscriber
+                        .name.given_name,
+                      subscription.subscriber
+                        .name.surname,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                  : "Wassim Abari",
+              orphaned_afrolove_account: true,
+              original_afrolove_user_id:
+                userId,
+            },
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq("id", existingOrphan.id);
+
+      if (orphanUpdateError) {
+        throw orphanUpdateError;
+      }
+
+      return {
+        subscriptionRowId:
+          existingOrphan.id,
+        userId,
+        plan,
+        subscription,
+        orphaned: true,
+      };
+    }
+
     return {
       subscriptionRowId: null,
       userId,
