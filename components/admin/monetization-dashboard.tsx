@@ -323,6 +323,7 @@ export function MonetizationDashboard({
           (endText
             ? " until " + endText + "."
             : ".") +
+          " Member notification created." +
           paypalWarning,
       );
 
