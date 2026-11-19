@@ -12,7 +12,14 @@ type Settings = {
   pass_recycle_hours: number;
 };
 
-type Member = { id: string; display_name: string; email: string | null };
+type Member = {
+  id: string;
+  display_name: string;
+  email: string | null;
+  account_status: string;
+  is_verified: boolean;
+  onboarding_completed: boolean;
+};
 type Subscription = {
   id: string;
   user_id: string | null;
@@ -34,11 +41,25 @@ type Transaction = {
   created_at: string;
 };
 
+type ComplimentaryGrant = {
+  id: string;
+  user_id: string;
+  plan_slug: string;
+  starts_at: string;
+  ends_at: string;
+  reason: string;
+  campaign_code: string | null;
+  revoked_at: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export function MonetizationDashboard({
   initialSettings,
   members,
   subscriptions,
   transactions,
+  complimentaryGrants,
   paypalConfigured,
   currentAdminName,
 }: {
@@ -46,14 +67,47 @@ export function MonetizationDashboard({
   members: Member[];
   subscriptions: Subscription[];
   transactions: Transaction[];
+  complimentaryGrants: ComplimentaryGrant[];
   paypalConfigured: boolean;
   currentAdminName: string;
 }) {
   const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
-  const [memberId, setMemberId] = useState(members[0]?.id || "");
-  const [plan, setPlan] = useState("premium");
-  const [days, setDays] = useState(30);
+  const [memberId, setMemberId] =
+    useState(
+      members.find(
+        (member) =>
+          member.onboarding_completed,
+      )?.id || "",
+    );
+
+  const [plan, setPlan] =
+    useState("premium");
+
+  const [days, setDays] =
+    useState(30);
+
+  const [complimentaryMemberId, setComplimentaryMemberId] =
+    useState(
+      members.find(
+        (member) =>
+          !["banned", "suspended", "deleted"].includes(
+            member.account_status,
+          ),
+      )?.id || "",
+    );
+
+  const [complimentaryPlan, setComplimentaryPlan] =
+    useState("premium");
+
+  const [complimentaryDays, setComplimentaryDays] =
+    useState(30);
+
+  const [complimentaryReason, setComplimentaryReason] =
+    useState("Customer compensation");
+
+  const [complimentaryCampaign, setComplimentaryCampaign] =
+    useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [visibleSubscriptions, setVisibleSubscriptions] =
@@ -65,6 +119,21 @@ export function MonetizationDashboard({
 
   const memberMap = useMemo(
     () => new Map(members.map((member) => [member.id, member])),
+    [members],
+  );
+
+  const complimentaryMembers = useMemo(
+    () =>
+      members.filter(
+        (member) =>
+          ![
+            "banned",
+            "suspended",
+            "deleted",
+          ].includes(
+            member.account_status,
+          ),
+      ),
     [members],
   );
   const revenueByCurrency = useMemo(
@@ -181,6 +250,92 @@ export function MonetizationDashboard({
     }
   };
 
+  const grantComplimentary = async () => {
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        "/api/admin/monetization/complimentary",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            userId:
+              complimentaryMemberId,
+            plan:
+              complimentaryPlan,
+            days:
+              complimentaryDays,
+            reason:
+              complimentaryReason,
+            campaignCode:
+              complimentaryCampaign,
+          }),
+        },
+      );
+
+      const payload =
+        await response.json();
+
+      if (!response.ok) {
+        setMessage(
+          payload.error ||
+            "Unable to grant complimentary membership.",
+        );
+
+        return;
+      }
+
+      const grant =
+        payload.grant || {};
+
+      const startText =
+        grant.startsAt
+          ? new Date(
+              grant.startsAt,
+            ).toLocaleDateString(
+              "en-GB",
+            )
+          : "now";
+
+      const endText =
+        grant.endsAt
+          ? new Date(
+              grant.endsAt,
+            ).toLocaleDateString(
+              "en-GB",
+            )
+          : "";
+
+      const paypalWarning =
+        grant.paypalBillingActionRequired
+          ? " IMPORTANT: This member has active PayPal billing. The complimentary access is recorded in AfroLove, but PayPal billing has NOT been changed."
+          : "";
+
+      setMessage(
+        complimentaryPlan.toUpperCase() +
+          " complimentary membership granted from " +
+          startText +
+          (endText
+            ? " until " + endText + "."
+            : ".") +
+          paypalWarning,
+      );
+
+      router.refresh();
+    } catch {
+      setMessage(
+        "Unable to grant complimentary membership. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const inputClass =
     "mt-2 w-full rounded-2xl border border-white/10 bg-[#0d0f14] px-4 py-3 text-sm text-white outline-none focus:border-[#F2C94C]/60";
 
@@ -264,7 +419,19 @@ export function MonetizationDashboard({
             <h2 className="mt-2 text-2xl font-black">Grant, change or revoke</h2>
             <p className="mt-2 text-sm leading-6 text-white/38">No money is charged. Selecting Free immediately revokes active Premium or VIP test access.</p>
             <div className="mt-6 space-y-4">
-              <Field label="Member"><select className={inputClass} value={memberId} onChange={(event) => setMemberId(event.target.value)}>{members.map((member) => <option key={member.id} value={member.id}>{member.display_name} — {member.email || "No email"}</option>)}</select></Field>
+              <Field label="Member"><select className={inputClass} value={memberId} onChange={(event) => setMemberId(event.target.value)}>{members
+  .filter(
+    (member) =>
+      member.onboarding_completed,
+  )
+  .map((member) => (
+    <option
+      key={member.id}
+      value={member.id}
+    >
+      {member.display_name} — {member.email || "No email"}
+    </option>
+  ))}</select></Field>
               <Field label="Plan"><select className={inputClass} value={plan} onChange={(event) => setPlan(event.target.value)}><option value="premium">Premium</option><option value="vip">VIP</option><option value="free">Free — revoke membership</option></select></Field>
               {plan !== "free" && <Field label="Number of days"><input type="number" min="1" max="365" className={inputClass} value={days} onChange={(event) => setDays(Number(event.target.value))} /></Field>}
             </div>
@@ -272,6 +439,207 @@ export function MonetizationDashboard({
             <div className="mt-5 rounded-2xl border border-white/[0.07] bg-black/20 p-4 text-xs leading-5 text-white/35"><strong className="text-white/65">Current default:</strong> Premium ₦3,500 for 30 days and VIP ₦7,500 for 30 days.</div>
           </section>
         </div>
+
+        <section className="mt-6 rounded-[30px] border border-[#F2C94C]/20 bg-[#F2C94C]/[0.035] p-6">
+          <p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">
+            ADMIN-ONLY COMPLIMENTARY MEMBERSHIP
+          </p>
+
+          <h2 className="mt-2 text-2xl font-black">
+            Give free Premium or VIP access
+          </h2>
+
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/45">
+            Use this for customer compensation, Christmas or New Year promotions, giveaways and other approved campaigns. No payment transaction or new PayPal subscription is created.
+          </p>
+
+          <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-xs leading-5 text-amber-100/70">
+            If the selected member already has an active PayPal subscription, AfroLove will record the complimentary entitlement without modifying PayPal. The system will warn you when separate PayPal billing action is required.
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <Field label="Member">
+              <select
+                className={inputClass}
+                value={complimentaryMemberId}
+                onChange={(event) =>
+                  setComplimentaryMemberId(
+                    event.target.value,
+                  )
+                }
+              >
+                {complimentaryMembers.map(
+                  (member) => (
+                    <option
+                      key={member.id}
+                      value={member.id}
+                    >
+                      {member.display_name || "Member"} — {member.email || "No email"} — {member.is_verified ? "Verified" : member.account_status.replaceAll("_", " ")}
+                    </option>
+                  ),
+                )}
+              </select>
+            </Field>
+
+            <Field label="Complimentary plan">
+              <select
+                className={inputClass}
+                value={complimentaryPlan}
+                onChange={(event) =>
+                  setComplimentaryPlan(
+                    event.target.value,
+                  )
+                }
+              >
+                <option value="premium">
+                  Premium
+                </option>
+
+                <option value="vip">
+                  VIP
+                </option>
+              </select>
+            </Field>
+
+            <Field label="Number of free days">
+              <input
+                type="number"
+                min="1"
+                max="365"
+                className={inputClass}
+                value={complimentaryDays}
+                onChange={(event) =>
+                  setComplimentaryDays(
+                    Number(
+                      event.target.value,
+                    ),
+                  )
+                }
+              />
+            </Field>
+
+            <Field label="Reason">
+              <input
+                className={inputClass}
+                maxLength={200}
+                value={complimentaryReason}
+                onChange={(event) =>
+                  setComplimentaryReason(
+                    event.target.value,
+                  )
+                }
+                placeholder="Customer compensation"
+              />
+            </Field>
+
+            <Field label="Campaign code (optional)">
+              <input
+                className={inputClass}
+                maxLength={80}
+                value={complimentaryCampaign}
+                onChange={(event) =>
+                  setComplimentaryCampaign(
+                    event.target.value,
+                  )
+                }
+                placeholder="NEWYEAR2027"
+              />
+            </Field>
+          </div>
+
+          <button
+            disabled={
+              busy ||
+              !complimentaryMemberId ||
+              !complimentaryReason.trim()
+            }
+            onClick={() =>
+              void grantComplimentary()
+            }
+            className="mt-5 w-full rounded-2xl bg-[#F2C94C] py-3 text-sm font-black text-black disabled:opacity-50"
+          >
+            {busy
+              ? "Granting complimentary access..."
+              : "Grant Complimentary Membership"}
+          </button>
+
+          <div className="mt-7">
+            <p className="text-xs font-black uppercase tracking-[0.15em] text-white/40">
+              Recent complimentary grants
+            </p>
+
+            <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.07]">
+              {complimentaryGrants.length ? (
+                complimentaryGrants.map(
+                  (grant) => {
+                    const member =
+                      memberMap.get(
+                        grant.user_id,
+                      );
+
+                    const paypalActionRequired =
+                      grant.metadata?.paypalBillingActionRequired === true;
+
+                    return (
+                      <div
+                        key={grant.id}
+                        className="flex flex-wrap items-center gap-3 border-b border-white/[0.06] bg-black/10 p-4 last:border-0"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-black">
+                            {member?.display_name ||
+                              "AfroLove member"}
+                          </p>
+
+                          <p className="mt-1 text-xs text-white/35">
+                            {member?.email ||
+                              "Email unavailable"}
+                          </p>
+
+                          <p className="mt-1 text-[10px] text-white/40">
+                            {grant.reason}
+                            {grant.campaign_code
+                              ? " · " +
+                                grant.campaign_code
+                              : ""}
+                          </p>
+
+                          {paypalActionRequired && (
+                            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.08em] text-amber-300/70">
+                              PayPal billing action still required
+                            </p>
+                          )}
+                        </div>
+
+                        <span className="rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/10 px-3 py-1 text-[10px] font-black uppercase text-[#FFE58C]">
+                          Complimentary {grant.plan_slug}
+                        </span>
+
+                        <span className="text-xs text-white/40">
+                          {new Date(
+                            grant.starts_at,
+                          ).toLocaleDateString(
+                            "en-GB",
+                          )}
+                          {" → "}
+                          {new Date(
+                            grant.ends_at,
+                          ).toLocaleDateString(
+                            "en-GB",
+                          )}
+                        </span>
+                      </div>
+                    );
+                  },
+                )
+              ) : (
+                <div className="p-6 text-center text-sm text-white/35">
+                  No complimentary memberships granted yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
         <section className="mt-6 rounded-[30px] border border-white/[0.08] bg-white/[0.025] p-6">
           <p className="text-[10px] font-black tracking-[0.25em] text-[#F2C94C]">ACTIVE MEMBER ACCESS</p>
