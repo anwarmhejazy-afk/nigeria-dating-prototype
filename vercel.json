@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/verification-evidence-retention",
       "schedule": "17 3 * * *"
+    },
+    {
+      "path": "/api/cron/incomplete-profile-cleanup",
+      "schedule": "43 3 * * *"
     }
   ]
 }

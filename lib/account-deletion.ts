@@ -10,6 +10,9 @@ type DeletionActor =
   | {
       kind: "admin";
       id: string;
+    }
+  | {
+      kind: "system";
     };
 
 type DeletionSummary = {
@@ -218,36 +221,61 @@ export async function deleteAfroLoveAccount({
     );
   }
 
-  const {
-    data: activeMembership,
-    error: membershipError,
-  } = await admin
-    .from("member_subscriptions")
-    .select(
-      "id,plan_slug,status,provider,provider_subscription_id,current_period_end,cancel_at_period_end",
-    )
-    .eq("user_id", userId)
-    .in("status", [
-      "pending",
-      "trialing",
-      "active",
-      "past_due",
-    ])
-    .order("created_at", {
-      ascending: false,
-    })
-    .limit(1)
-    .maybeSingle();
+  const membershipNow =
+    new Date().toISOString();
 
-  if (membershipError) {
+  const [
+    subscriptionResult,
+    complimentaryResult,
+  ] = await Promise.all([
+    admin
+      .from("member_subscriptions")
+      .select(
+        "id,plan_slug,status,provider,provider_subscription_id,current_period_end,cancel_at_period_end",
+      )
+      .eq("user_id", userId)
+      .in("status", [
+        "pending",
+        "trialing",
+        "active",
+        "past_due",
+      ])
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle(),
+
+    admin
+      .from("complimentary_memberships")
+      .select(
+        "id,plan_slug,starts_at,ends_at",
+      )
+      .eq("user_id", userId)
+      .is("revoked_at", null)
+      .gt(
+        "ends_at",
+        membershipNow,
+      )
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (
+    subscriptionResult.error ||
+    complimentaryResult.error
+  ) {
     throw new Error(
-      "Unable to verify the member's subscription before account deletion.",
+      "Unable to verify the member's membership before account deletion.",
     );
   }
 
-  if (activeMembership) {
+  if (
+    subscriptionResult.data ||
+    complimentaryResult.data
+  ) {
     throw new Error(
-      "This account has a current membership and cannot be permanently deleted yet. Resolve or complete the membership first so billing and payment history remain protected.",
+      "This account has a current membership and cannot be permanently deleted yet. Resolve or complete the membership first so billing and membership history remain protected.",
     );
   }
 
@@ -349,7 +377,9 @@ export async function deleteAfroLoveAccount({
       action:
         actor.kind === "admin"
           ? "admin_deleted_member_account"
-          : "member_deleted_own_account",
+          : actor.kind === "system"
+            ? "system_deleted_incomplete_account"
+            : "member_deleted_own_account",
       target_user_id: userId,
       metadata: auditMetadata,
     });
