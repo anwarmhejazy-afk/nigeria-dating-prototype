@@ -591,21 +591,71 @@ function PersonCard({ label, member }: { label: string; member: AdminProfile | n
   return <div className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3"><Avatar member={member} /><span className="min-w-0"><span className="block text-[9px] font-black uppercase tracking-wider text-white/25">{label}</span><span className="mt-1 block truncate text-sm font-black">{member?.displayName || "Unknown"}</span><span className="block truncate text-[10px] text-white/35">{member?.email || "No email shown"}</span></span></div>;
 }
 
-function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean; run: (callback: () => Promise<void>, message: string) => Promise<void> }) {
-  const canRemind = Boolean(member.email) && ["profile_incomplete", "verification_not_submitted", "reverification_required"].includes(member.accountStatus);
+function MemberRow({
+  member,
+  busy,
+  run,
+}: {
+  member: AdminProfile;
+  busy: boolean;
+  run: (
+    callback: () => Promise<void>,
+    message: string,
+  ) => Promise<void>;
+}) {
+  const billingOnly = Boolean(member.billingOnly);
+
+  const canRemind =
+    !billingOnly &&
+    Boolean(member.email) &&
+    [
+      "profile_incomplete",
+      "verification_not_submitted",
+      "reverification_required",
+    ].includes(member.accountStatus);
+
   const sendReminder = () => {
-    if (!window.confirm(`Send a friendly profile/verification reminder to ${member.displayName} at ${member.email}?\n\nThis does not change account status. Only one attempt per member is allowed every 24 hours.`)) return;
+    if (billingOnly) return;
+
+    if (
+      !window.confirm(
+        `Send a friendly profile/verification reminder to ${member.displayName} at ${member.email}?\n\nThis does not change account status. Only one attempt per member is allowed every 24 hours.`,
+      )
+    ) {
+      return;
+    }
+
     void run(async () => {
-      const response = await fetch(`/api/admin/members/${member.id}/reminder`, { method: "POST" });
+      const response = await fetch(
+        `/api/admin/members/${member.id}/reminder`,
+        { method: "POST" },
+      );
+
       const result = await response.json();
+
       if (!response.ok) {
-        const retry = result.retryAt ? ` Try again after ${new Date(result.retryAt).toLocaleString()}.` : "";
-        throw new Error((result.error || "Unable to send reminder.") + retry);
+        const retry = result.retryAt
+          ? ` Try again after ${new Date(
+              result.retryAt,
+            ).toLocaleString()}.`
+          : "";
+
+        throw new Error(
+          (result.error ||
+            "Unable to send reminder.") +
+            retry,
+        );
       }
-      if (result.auditWarning) throw new Error(result.message);
+
+      if (result.auditWarning) {
+        throw new Error(result.message);
+      }
     }, "Reminder email submitted successfully. Delivery status is pending.");
   };
+
   const resetDiscovery = () => {
+    if (billingOnly) return;
+
     if (
       !window.confirm(
         `Reset discovery for ${member.displayName}?\n\nThis will remove this member's previous Pass choices so eligible profiles can appear again. Likes, matches, chats and membership will not be changed.`,
@@ -623,59 +673,239 @@ function MemberRow({ member, busy, run }: { member: AdminProfile; busy: boolean;
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to reset discovery.");
+        throw new Error(
+          result.error ||
+            "Unable to reset discovery.",
+        );
       }
     }, "Discovery reset. Passed profiles can appear again.");
   };
 
-  const action = (value: string, durationHours?: number) => {
-    const note = window.prompt(`Reason for ${value.replaceAll("_", " ")} action:`) || "";
-    if (["warn", "restrict_messaging", "suspend", "ban"].includes(value) && !note.trim()) return;
-    void run(() => apiRequest(`/api/admin/members/${member.id}`, { method: "PATCH", body: JSON.stringify({ action: value, note, durationHours }) }).then(() => undefined), "Member account updated");
+  const action = (
+    value: string,
+    durationHours?: number,
+  ) => {
+    if (billingOnly) return;
+
+    const note =
+      window.prompt(
+        `Reason for ${value.replaceAll(
+          "_",
+          " ",
+        )} action:`,
+      ) || "";
+
+    if (
+      [
+        "warn",
+        "restrict_messaging",
+        "suspend",
+        "ban",
+      ].includes(value) &&
+      !note.trim()
+    ) {
+      return;
+    }
+
+    void run(
+      () =>
+        apiRequest(
+          `/api/admin/members/${member.id}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({
+              action: value,
+              note,
+              durationHours,
+            }),
+          },
+        ).then(() => undefined),
+      "Member account updated",
+    );
   };
+
   return (
     <tr className="border-t border-white/[0.06] text-sm">
       <td className="p-4">
         <div className="flex items-center gap-3">
           <Avatar member={member} />
+
           <div>
-            <p className="font-black">{member.displayName}</p>
-            <p className="mt-1 text-[10px] text-white/35">{member.email}</p>
-            {member.latestReminderStatus && (
-              <p className="mt-1 text-[10px] font-bold text-[#FFE58C]">
-                Reminder: {member.latestReminderStatus.charAt(0).toUpperCase() + member.latestReminderStatus.slice(1)}
-                {member.latestReminderUpdatedAt && (
-                  <>
-                    <span> · </span>
-                    {formatDate(member.latestReminderUpdatedAt)}
-                  </>
+            <p className="font-black">
+              {member.displayName}
+            </p>
+
+            <p className="mt-1 text-[10px] text-white/35">
+              {member.email ||
+                "Email unavailable"}
+            </p>
+
+            {billingOnly && (
+              <>
+                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.1em] text-[#FFE58C]">
+                  PayPal {member.billingPlan || "Premium"} active
+                </p>
+
+                {member.paypalSubscriptionId && (
+                  <p className="mt-1 text-[9px] text-white/25">
+                    {member.paypalSubscriptionId}
+                  </p>
                 )}
-              </p>
+              </>
             )}
+
+            {!billingOnly &&
+              member.latestReminderStatus && (
+                <p className="mt-1 text-[10px] font-bold text-[#FFE58C]">
+                  Reminder:{" "}
+                  {member.latestReminderStatus
+                    .charAt(0)
+                    .toUpperCase() +
+                    member.latestReminderStatus.slice(
+                      1,
+                    )}
+
+                  {member.latestReminderUpdatedAt && (
+                    <>
+                      <span> · </span>
+                      {formatDate(
+                        member.latestReminderUpdatedAt,
+                      )}
+                    </>
+                  )}
+                </p>
+              )}
           </div>
         </div>
       </td>
-      <td className="p-4 text-xs text-white/50">{member.city || "—"}, {member.country}</td>
-      <td className="p-4"><StatusBadge value={member.accountStatus} /></td>
-      
-      <td className="p-4 text-xs text-white/35">{formatDate(member.createdAt)}</td>
+
+      <td className="p-4 text-xs text-white/50">
+        {billingOnly
+          ? "—"
+          : `${member.city || "—"}, ${member.country}`}
+      </td>
+
       <td className="p-4">
-  <div className="flex flex-wrap gap-1.5">
-    <a
-      href={`/admin/members/${member.id}`}
-      className="mini-action text-[#FFE58C]"
-    >
-      View Profile
-    </a>
-    {canRemind && <button disabled={busy} onClick={sendReminder} className="mini-action text-[#FFE58C]">Send profile reminder</button>}
-    <button disabled={busy} onClick={resetDiscovery} className="mini-action text-blue-200">Reset Discovery</button>
-    <button disabled={busy} onClick={() => action("warn")} className="mini-action">Warn</button>
-    <button disabled={busy} onClick={() => action("restrict_messaging", 72)} className="mini-action">Restrict</button>
-    <button disabled={busy} onClick={() => action("suspend", 168)} className="mini-action">Suspend</button>
-    <button disabled={busy} onClick={() => action("ban")} className="mini-action text-red-200">Ban</button>
-    <button disabled={busy} onClick={() => action("restore")} className="mini-action text-emerald-200">Restore</button>
-  </div>
-</td>
+        {billingOnly ? (
+          <div className="flex flex-col items-start gap-1">
+            <span className="rounded-full border border-[#F2C94C]/25 bg-[#F2C94C]/10 px-2.5 py-1 text-[9px] font-black uppercase text-[#FFE58C]">
+              PayPal Premium Active
+            </span>
+
+            <span className="rounded-full border border-amber-400/20 bg-amber-400/[0.07] px-2.5 py-1 text-[9px] font-black uppercase text-amber-200/70">
+              AfroLove account deleted
+            </span>
+          </div>
+        ) : (
+          <StatusBadge
+            value={member.accountStatus}
+          />
+        )}
+      </td>
+
+      <td className="p-4 text-xs text-white/35">
+        {billingOnly
+          ? member.billingPeriodEnd
+            ? `Paid access until ${new Date(
+                member.billingPeriodEnd,
+              ).toLocaleDateString("en-GB")}`
+            : "PayPal subscription active"
+          : formatDate(member.createdAt)}
+      </td>
+
+      <td className="p-4">
+        {billingOnly ? (
+          <div className="flex flex-wrap gap-1.5">
+            <a
+              href="/admin/monetization"
+              className="mini-action text-[#FFE58C]"
+            >
+              View Membership
+            </a>
+
+            <a
+              href="/admin/revenue"
+              className="mini-action text-emerald-200"
+            >
+              View Payment
+            </a>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            <a
+              href={`/admin/members/${member.id}`}
+              className="mini-action text-[#FFE58C]"
+            >
+              View Profile
+            </a>
+
+            {canRemind && (
+              <button
+                disabled={busy}
+                onClick={sendReminder}
+                className="mini-action text-[#FFE58C]"
+              >
+                Send profile reminder
+              </button>
+            )}
+
+            <button
+              disabled={busy}
+              onClick={resetDiscovery}
+              className="mini-action text-blue-200"
+            >
+              Reset Discovery
+            </button>
+
+            <button
+              disabled={busy}
+              onClick={() => action("warn")}
+              className="mini-action"
+            >
+              Warn
+            </button>
+
+            <button
+              disabled={busy}
+              onClick={() =>
+                action(
+                  "restrict_messaging",
+                  72,
+                )
+              }
+              className="mini-action"
+            >
+              Restrict
+            </button>
+
+            <button
+              disabled={busy}
+              onClick={() =>
+                action("suspend", 168)
+              }
+              className="mini-action"
+            >
+              Suspend
+            </button>
+
+            <button
+              disabled={busy}
+              onClick={() => action("ban")}
+              className="mini-action text-red-200"
+            >
+              Ban
+            </button>
+
+            <button
+              disabled={busy}
+              onClick={() => action("restore")}
+              className="mini-action text-emerald-200"
+            >
+              Restore
+            </button>
+          </div>
+        )}
+      </td>
     </tr>
   );
 }

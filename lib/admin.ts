@@ -18,6 +18,13 @@ export type AdminProfile = {
   latestReminderStatus: string | null;
   latestReminderRequestedAt: string | null;
   latestReminderUpdatedAt: string | null;
+
+  // Admin-only representation of an active paid subscription
+  // whose original AfroLove Auth/profile account was deleted.
+  billingOnly?: boolean;
+  billingPlan?: string | null;
+  paypalSubscriptionId?: string | null;
+  billingPeriodEnd?: string | null;
 };
 
 export type ReportEvidenceItem = {
@@ -215,6 +222,7 @@ export async function loadAdminDashboard(
     auditResult,
     metricsResult,
     adminMembersResult,
+    orphanSubscriptionsResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -252,6 +260,17 @@ export async function loadAdminDashboard(
       .from("admin_members")
       .select("user_id")
       .eq("is_active", true),
+
+    supabase
+      .from("member_subscriptions")
+      .select(
+        "id,user_id,plan_slug,status,provider,provider_subscription_id,customer_email,current_period_start,current_period_end,metadata,created_at",
+      )
+      .eq("provider", "paypal")
+      .is("user_id", null)
+      .in("status", ["active", "trialing", "past_due"])
+      .order("created_at", { ascending: false })
+      .limit(100),
   ]);
 
   /*
@@ -274,6 +293,65 @@ export async function loadAdminDashboard(
   const profiles = allProfiles.filter(
     (profile) => !activeStaffIds.has(profile.id),
   );
+
+  for (const row of (orphanSubscriptionsResult.data || []) as Row[]) {
+    const metadata =
+      row.metadata &&
+      typeof row.metadata === "object" &&
+      !Array.isArray(row.metadata)
+        ? (row.metadata as Row)
+        : {};
+
+    const subscriptionId =
+      text(
+        row.provider_subscription_id,
+        text(row.id),
+      );
+
+    const payerName =
+      text(
+        metadata.payer_name,
+        text(
+          metadata.subscriber_name,
+          "PayPal subscriber",
+        ),
+      );
+
+    profiles.push({
+      id: `paypal-subscription:${subscriptionId}`,
+      email: nullableText(row.customer_email),
+      displayName: payerName,
+      avatarUrl: null,
+      country: "",
+      city: "",
+      accountStatus: "paypal_active_deleted",
+      isVerified: false,
+      onboardingCompleted: false,
+      messagingRestrictedUntil: null,
+      suspendedUntil: null,
+      moderationNote:
+        "Original AfroLove account deleted; PayPal subscription remains active.",
+      createdAt:
+        text(
+          row.current_period_start,
+          text(row.created_at),
+        ),
+      latestReminderStatus: null,
+      latestReminderRequestedAt: null,
+      latestReminderUpdatedAt: null,
+      billingOnly: true,
+      billingPlan:
+        nullableText(row.plan_slug),
+      paypalSubscriptionId:
+        nullableText(
+          row.provider_subscription_id,
+        ),
+      billingPeriodEnd:
+        nullableText(
+          row.current_period_end,
+        ),
+    });
+  }
 
   /*
    * Delivery tracking is service-role only. Normal authenticated users
@@ -420,7 +498,7 @@ export async function loadAdminDashboard(
     metrics: {
       members: profiles.length,
       activeMembers: profiles.filter((profile) =>
-        ["active", "warned", "restricted"].includes(profile.accountStatus),
+        ["active", "warned", "restricted", "paypal_active_deleted"].includes(profile.accountStatus),
       ).length,
       openReports: reports.filter((report) => ["open", "reviewing"].includes(report.status)).length,
       urgentReports: reports.filter(
