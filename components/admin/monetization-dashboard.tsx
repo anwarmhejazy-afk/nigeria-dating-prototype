@@ -519,17 +519,51 @@ export function MonetizationDashboard({
             </Field>
 
             <Field label="Reason">
-              <input
+              <select
                 className={inputClass}
-                maxLength={200}
                 value={complimentaryReason}
                 onChange={(event) =>
                   setComplimentaryReason(
                     event.target.value,
                   )
                 }
-                placeholder="Customer compensation"
-              />
+              >
+                <option value="Customer compensation">
+                  Customer compensation
+                </option>
+
+                <option value="Christmas promotion">
+                  Christmas promotion
+                </option>
+
+                <option value="New Year promotion">
+                  New Year promotion
+                </option>
+
+                <option value="Welcome offer">
+                  Welcome offer
+                </option>
+
+                <option value="Loyalty reward">
+                  Loyalty reward
+                </option>
+
+                <option value="Referral reward">
+                  Referral reward
+                </option>
+
+                <option value="Giveaway reward">
+                  Giveaway reward
+                </option>
+
+                <option value="Special promotion">
+                  Special promotion
+                </option>
+
+                <option value="Admin goodwill">
+                  Admin goodwill
+                </option>
+              </select>
             </Field>
 
             <Field label="Campaign code (optional)">
