@@ -681,6 +681,50 @@ function MemberRow({
     }, "Discovery reset. Passed profiles can appear again.");
   };
 
+  const restorePaidAccount = () => {
+    if (
+      !billingOnly ||
+      !member.paypalSubscriptionId
+    ) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Restore AfroLove access for ${member.displayName} at ${member.email}?\n\nThis will create a secure recovery login, reconnect the existing PayPal Premium subscription and payment, and send a recovery email. No new payment will be charged.`,
+      )
+    ) {
+      return;
+    }
+
+    void run(async () => {
+      const response = await fetch(
+        "/api/admin/paypal-recovery",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            subscriptionId:
+              member.paypalSubscriptionId,
+          }),
+        },
+      );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            "Unable to restore the account.",
+        );
+      }
+    }, "Recovery email sent and Premium membership reconnected.");
+  };
+
   const action = (
     value: string,
     durationHours?: number,
@@ -816,6 +860,14 @@ function MemberRow({
       <td className="p-4">
         {billingOnly ? (
           <div className="flex flex-wrap gap-1.5">
+            <button
+              disabled={busy}
+              onClick={restorePaidAccount}
+              className="mini-action text-emerald-200"
+            >
+              Restore Account
+            </button>
+
             <a
               href="/admin/monetization"
               className="mini-action text-[#FFE58C]"
