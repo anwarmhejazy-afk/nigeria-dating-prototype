@@ -256,16 +256,26 @@ export function AdminDashboard({
     }
   };
 
+  const activeMembers = useMemo(
+    () =>
+      data.members.filter(
+        (member) =>
+          member.accountStatus === "active" &&
+          member.onboardingCompleted,
+      ),
+    [data.members],
+  );
+
   const filteredMembers = useMemo(() => {
     const search = query.trim().toLowerCase();
-    if (!search) return data.members;
-    return data.members.filter((member) =>
+    if (!search) return activeMembers;
+    return activeMembers.filter((member) =>
       [member.displayName, member.email || "", member.country, member.city, member.accountStatus]
         .join(" ")
         .toLowerCase()
         .includes(search),
     );
-  }, [data.members, query]);
+  }, [activeMembers, query]);
 
   return (
     <main className="min-h-screen bg-[#07080b] text-white">

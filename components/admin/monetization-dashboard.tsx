@@ -91,9 +91,8 @@ export function MonetizationDashboard({
     useState(
       members.find(
         (member) =>
-          !["banned", "suspended", "deleted"].includes(
-            member.account_status,
-          ),
+          member.account_status === "active" &&
+          member.onboarding_completed,
       )?.id || "",
     );
 
@@ -126,13 +125,8 @@ export function MonetizationDashboard({
     () =>
       members.filter(
         (member) =>
-          ![
-            "banned",
-            "suspended",
-            "deleted",
-          ].includes(
-            member.account_status,
-          ),
+          member.account_status === "active" &&
+          member.onboarding_completed,
       ),
     [members],
   );
