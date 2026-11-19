@@ -320,8 +320,6 @@ export async function POST(request: Request) {
         "",
         recoveryUrl,
         "",
-        "As an apology for the inconvenience, AfroLove will extend your Premium membership by one additional month at no extra charge.",
-        "",
         "Some profile information or photos that were removed during the account issue may need to be confirmed or uploaded again, but your existing Premium payment and subscription will remain connected to your restored account.",
         "",
         "If you did not expect this email or need assistance, simply reply to this message.",
@@ -361,10 +359,6 @@ export async function POST(request: Request) {
 
           <p>
             The link will allow you to choose a new password and restore access to AfroLove.
-          </p>
-
-          <p>
-            As an apology for the inconvenience, <strong>AfroLove will extend your Premium membership by one additional month at no extra charge.</strong>
           </p>
 
           <p>
@@ -410,8 +404,6 @@ export async function POST(request: Request) {
           account_recovery_started: true,
           recovered_auth_user_id:
             authUser.id,
-          complimentary_month_promised:
-            true,
           recovery_email_id:
             emailResult.id,
           recovery_requested_at:
@@ -460,8 +452,6 @@ export async function POST(request: Request) {
           createdAuthUser,
           recoveryEmailId:
             emailResult.id,
-          complimentaryMonthPromised:
-            true,
         },
       });
 
