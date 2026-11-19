@@ -533,17 +533,47 @@ export function MonetizationDashboard({
             </Field>
 
             <Field label="Campaign code (optional)">
-              <input
+              <select
                 className={inputClass}
-                maxLength={80}
                 value={complimentaryCampaign}
                 onChange={(event) =>
                   setComplimentaryCampaign(
                     event.target.value,
                   )
                 }
-                placeholder="NEWYEAR2027"
-              />
+              >
+                <option value="">
+                  None
+                </option>
+
+                <option value="CUSTOMER-COMPENSATION">
+                  Customer Compensation
+                </option>
+
+                <option value="CHRISTMAS2026">
+                  Christmas 2026
+                </option>
+
+                <option value="NEWYEAR2027">
+                  New Year 2027
+                </option>
+
+                <option value="LAUNCH-PROMO">
+                  Launch Promotion
+                </option>
+
+                <option value="GIVEAWAY">
+                  Giveaway
+                </option>
+
+                <option value="REFERRAL">
+                  Referral Promotion
+                </option>
+
+                <option value="SPECIAL-OFFER">
+                  Special Offer
+                </option>
+              </select>
             </Field>
           </div>
 
